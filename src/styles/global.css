@@ -72,3 +72,105 @@ h6 {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+
+/* Peak-down specific styles */
+.peak-green {
+    color: #40d854;
+}
+
+.bg-peak-green {
+    background-color: #40d854;
+}
+
+.container-mobile {
+    max-width: 393px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background-color: #fafafa;
+    position: relative;
+}
+
+.mobile-frame {
+    width: 100%;
+    max-width: 393px;
+    min-height: 852px;
+    margin: 0 auto;
+    background: #fafafa;
+    position: relative;
+    overflow: hidden;
+}
+
+.status-bar {
+    height: 62px;
+    padding: 0 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'SF Pro', sans-serif;
+    font-weight: 590;
+    font-size: 17px;
+}
+
+.home-indicator {
+    position: absolute;
+    bottom: 34px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 144px;
+    height: 5px;
+    background: #000;
+    border-radius: 100px;
+}
+
+.progress-line {
+    height: 1px;
+    background: #dddddd;
+    position: relative;
+}
+
+.progress-line::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: #32b544;
+    transition: width 0.3s ease;
+}
+
+.btn-peak {
+    background: #363636;
+    color: #fafafa;
+    border-radius: 20px;
+    padding: 15px 32px;
+    font-family: 'Pretendard';
+    font-weight: 500;
+    font-size: 22px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-peak:hover {
+    background: #2a2a2a;
+}
+
+.btn-peak:disabled {
+    background: #cdcdcd;
+    cursor: not-allowed;
+}
+
+.input-peak {
+    background: #fafafa;
+    border: 1px solid #c5c5c5;
+    border-radius: 25px;
+    padding: 12px 20px;
+    font-family: 'Pretendard';
+    font-size: 22px;
+    width: 100%;
+    outline: none;
+}
+
+.input-peak:focus {
+    border-color: #40d854;
+}
