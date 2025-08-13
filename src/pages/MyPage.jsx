@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { patchNickname } from '../api/nicknameApi';
@@ -259,6 +260,7 @@ export default function MyPage() {
                     </div>
                 )}
             </div>
+
         </div>
     );
 }

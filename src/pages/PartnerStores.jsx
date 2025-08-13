@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import BottomSheet from '../components/BottomSheet';
 
@@ -341,6 +342,7 @@ export default function PartnerStores() {
                     </div>
                 )}
             </div>
+
         </div>
     );
 }
