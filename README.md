@@ -47,3 +47,4 @@ peak-down/
 ├── App.jsx # 루트 라우터 & 컴포넌트 설정
 └── main.jsx # 진입점 (ReactDOM + Router)
 
+```

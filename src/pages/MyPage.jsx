@@ -17,7 +17,7 @@ export default function MyPage() {
     const [formName, setFormName] = useState(nickname);
     const [saving, setSaving] = useState(false);
     const [saveErr, setSaveErr] = useState('');
-    
+
     // 로그아웃 관련 상태
     const [error, setError] = useState('');
 
@@ -71,7 +71,7 @@ export default function MyPage() {
             setSaving(false);
         }
     }
-    
+
     // 로그아웃 처리
     const handleLogout = async () => {
         setError('');
@@ -81,7 +81,7 @@ export default function MyPage() {
                 setError('로그인 정보가 없습니다.');
                 return;
             }
-            
+
             await logoutUser(refreshToken);
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
@@ -134,7 +134,7 @@ export default function MyPage() {
                                     </button>
                                 </li>
                                 <li>
-                                    <button 
+                                    <button
                                         className="flex w-full items-center justify-between px-4 py-3"
                                         onClick={handleLogout}
                                     >
