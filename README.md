@@ -46,9 +46,4 @@ peak-down/
 │ └── global.css # reset + custom css
 ├── App.jsx # 루트 라우터 & 컴포넌트 설정
 └── main.jsx # 진입점 (ReactDOM + Router)
-```
 
-```
-개발자 A (이우주) - 사용자흐름, 홈, 미션, 지도, QR
-개발자 B (홍시은) - 상점과 포인트 중심, 제휴상점, 보상
-```
