@@ -96,3 +96,40 @@ export async function logoutUser(refreshToken) {
         return { error: 'Network error: ' + error.message };
     }
 }
+
+export async function updateNickname(nickname) {
+    try {
+        const token = localStorage.getItem('accessToken');
+        if (!token) {
+            return { error: '로그인이 필요합니다.' };
+        }
+
+        const res = await fetch(`${BASE_URL}/users/nickname/`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                Authorization: `Bearer ${token}`,
+                Origin: window.location.origin,
+            },
+            credentials: 'include',
+            body: JSON.stringify({ nickname }),
+        });
+
+        const text = await res.text();
+        console.log('닉네임 업데이트 응답:', text); // 디버깅용
+
+        let jsonRes;
+        try {
+            jsonRes = text ? JSON.parse(text) : {};
+        } catch (e) {
+            console.error('Error parsing JSON response:', e);
+            jsonRes = { error: 'Failed to parse server response' };
+        }
+
+        return jsonRes;
+    } catch (error) {
+        console.error('Network error:', error);
+        return { error: 'Network error: ' + error.message };
+    }
+}

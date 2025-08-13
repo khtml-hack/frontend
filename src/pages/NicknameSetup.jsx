@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { updateNickname } from '../api/userApi';
 
 const NicknameSetup = () => {
     const [nickname, setNickname] = useState('');
     const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
-
-    // API에서 가져온 함수들
-    const { updateNickname } = require('../api/userApi');
 
     const handleNextClick = async () => {
         if (!nickname.trim()) {
@@ -16,6 +15,9 @@ const NicknameSetup = () => {
         }
 
         try {
+            setIsLoading(true);
+            setError('');
+
             const accessToken = localStorage.getItem('accessToken');
             if (!accessToken) {
                 navigate('/login');
@@ -23,14 +25,22 @@ const NicknameSetup = () => {
             }
 
             const res = await updateNickname(nickname);
+            console.log('닉네임 설정 응답:', res); // 디버깅용
+
             if (res.nickname) {
                 // 성공적으로 닉네임 설정 완료
-                navigate('/onboarding');
+                localStorage.setItem('nickname', res.nickname);
+                navigate('/home');
+            } else if (res.error) {
+                setError(res.error);
             } else {
                 setError(res.message || '닉네임 설정에 실패했습니다.');
             }
         } catch (e) {
+            console.error('닉네임 설정 오류:', e);
             setError('닉네임 설정 중 오류가 발생했습니다.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -68,9 +78,12 @@ const NicknameSetup = () => {
 
                 <button
                     onClick={handleNextClick}
-                    className="bg-gray-800 text-white rounded-full py-4 px-12 w-full text-xl"
+                    disabled={isLoading || !nickname.trim()}
+                    className={`bg-gray-800 text-white rounded-full py-4 px-12 w-full text-xl ${
+                        isLoading ? 'opacity-70' : ''
+                    }`}
                 >
-                    다음
+                    {isLoading ? '처리중...' : '다음'}
                 </button>
             </div>
         </div>

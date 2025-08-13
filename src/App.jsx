@@ -13,6 +13,7 @@ import StoreDetail from './pages/StoreDetail';
 import QRUse from './pages/QRUse';
 import PointHistory from './pages/PointHistory';
 import MyPage from './pages/MyPage';
+import NicknameSetup from './pages/NicknameSetup';
 
 function App() {
     return (
@@ -31,6 +32,7 @@ function App() {
                 <Route path="/qr-use" element={<QRUse />} />
                 <Route path="/point-history" element={<PointHistory />} />
                 <Route path="/mypage" element={<MyPage />} />
+                <Route path="/nickname-setup" element={<NicknameSetup />} />
             </Routes>
         </div>
     );
