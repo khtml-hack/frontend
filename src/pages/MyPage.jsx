@@ -1,19 +1,39 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logoutUser } from '../api/userApi';
 
 const MyPage = () => {
     const [showNicknameEdit, setShowNicknameEdit] = useState(false);
     const [nickname, setNickname] = useState('김혼잡');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const menuItems = [
         { id: 'info', label: '내정보', icon: '💬' },
         { id: 'nickname', label: '닉네임 변경', icon: '✏️' },
         { id: 'routes', label: '자주가는 경로 관리', icon: '🗺️' },
+        { id: 'logout', label: '로그아웃', icon: '🚪' },
     ];
 
     const handleNicknameUpdate = () => {
         setShowNicknameEdit(false);
+    };
+
+    const handleLogout = async () => {
+        setError('');
+        try {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (!refreshToken) {
+                setError('로그인 정보가 없습니다.');
+                return;
+            }
+            const res = await logoutUser(refreshToken);
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            navigate('/login');
+        } catch (e) {
+            setError('로그아웃 중 오류가 발생했습니다.');
+        }
     };
 
     return (
@@ -86,6 +106,8 @@ const MyPage = () => {
                             onClick={() => {
                                 if (item.id === 'nickname') {
                                     setShowNicknameEdit(true);
+                                } else if (item.id === 'logout') {
+                                    handleLogout();
                                 }
                             }}
                             className="w-full text-left py-3 text-black text-lg"
@@ -93,6 +115,7 @@ const MyPage = () => {
                             {item.label}
                         </button>
                     ))}
+                    {error && <div className="text-red-500 text-sm text-center mb-2">{error}</div>}
                 </div>
             </div>
 

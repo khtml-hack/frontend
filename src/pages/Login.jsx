@@ -1,14 +1,28 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { loginUser } from '../api/userApi';
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    const handleLogin = () => {
-        // 로그인 로직 처리
-        navigate('/onboarding');
+    const handleLogin = async () => {
+        setError('');
+        try {
+            const res = await loginUser({ email, password });
+            if (res.access) {
+                // 토큰 저장 (localStorage)
+                localStorage.setItem('accessToken', res.access);
+                localStorage.setItem('refreshToken', res.refresh);
+                navigate('/onboarding');
+            } else {
+                setError(res.message || '로그인에 실패했습니다.');
+            }
+        } catch (e) {
+            setError('로그인 중 오류가 발생했습니다.');
+        }
     };
 
     return (
@@ -52,6 +66,7 @@ const Login = () => {
                     <button onClick={handleLogin} disabled={!email || !password} className="btn-peak w-full mb-6">
                         로그인
                     </button>
+                    {error && <div className="text-red-500 text-sm text-center mb-2">{error}</div>}
 
                     <button
                         onClick={() => navigate('/signup')}
