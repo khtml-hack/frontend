@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'http://port-0-baekend-me5uuo8u902e71f2.sel5.cloudtype.app/';
 
 export const rewardApi = {
     // 포인트 내역 조회
