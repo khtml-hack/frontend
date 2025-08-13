@@ -1,3 +1,4 @@
+```
 peak-down/
 ├── index.html # Vite 진입 HTML
 ├── vite.config.js # Vite 설정 파일
@@ -45,3 +46,4 @@ peak-down/
 │ └── global.css # reset + custom css
 ├── App.jsx # 루트 라우터 & 컴포넌트 설정
 └── main.jsx # 진입점 (ReactDOM + Router)
+

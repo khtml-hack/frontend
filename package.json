@@ -12,7 +12,8 @@
     "dependencies": {
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
-        "react-router-dom": "^6.8.1"
+        "react-router-dom": "^6.8.1",
+        "react-spring-bottom-sheet": "^3.4.1"
     },
     "devDependencies": {
         "@types/react": "^18.2.43",
@@ -45,5 +46,6 @@
             "last 1 firefox version",
             "last 1 safari version"
         ]
-    }
+    },
+    "packageManager": "pnpm@10.12.3+sha512.467df2c586056165580ad6dfb54ceaad94c5a30f80893ebdec5a44c5aa73c205ae4a5bb9d5ed6bb84ea7c249ece786642bbb49d06a307df218d03da41c317417"
 }
