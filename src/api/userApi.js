@@ -56,6 +56,32 @@ export async function loginUser(data) {
         let jsonRes;
         try {
             jsonRes = text ? JSON.parse(text) : {};
+
+            // 로그인 성공 시 사용자 정보 확인 (닉네임 포함)
+            if (jsonRes.access) {
+                try {
+                    // 사용자 정보 요청
+                    const userInfoRes = await fetch(`${BASE_URL}/users/me/`, {
+                        method: 'GET',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: `Bearer ${jsonRes.access}`,
+                            Origin: window.location.origin,
+                        },
+                        credentials: 'include',
+                    });
+
+                    const userInfo = await userInfoRes.json();
+
+                    // 응답에 닉네임 정보 포함
+                    if (userInfo) {
+                        jsonRes.nickname = userInfo.nickname || '';
+                        jsonRes.nickname_required = !userInfo.nickname || userInfo.nickname === '';
+                    }
+                } catch (userError) {
+                    console.error('사용자 정보 조회 오류:', userError);
+                }
+            }
         } catch (e) {
             console.error('Error parsing JSON response:', e);
             jsonRes = { error: 'Failed to parse server response' };

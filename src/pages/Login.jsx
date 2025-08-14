@@ -40,11 +40,12 @@ const Login = () => {
                 localStorage.setItem('accessToken', res.access);
                 localStorage.setItem('refreshToken', res.refresh);
 
-                // 닉네임 설정 필요 여부에 따라 페이지 이동
-                if (res.nickname_required) {
+                // 첫 로그인인 경우 닉네임 설정 페이지로 이동
+                if (!res.nickname || res.nickname === '' || res.nickname_required) {
                     navigate('/nickname-setup');
                 } else {
-                    // 로그인 성공 시 홈 페이지로 이동
+                    // 닉네임이 이미 설정되어 있으면 홈 페이지로 이동
+                    localStorage.setItem('nickname', res.nickname);
                     navigate('/home');
                 }
             } else if (res.error) {

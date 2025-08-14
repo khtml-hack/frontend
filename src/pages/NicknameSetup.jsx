@@ -61,7 +61,7 @@ const NicknameSetup = () => {
                 <div className="text-center mb-8">
                     <div className="text-6xl mb-6">👋</div>
                     <h1 className="text-3xl font-bold mb-4">반가워요!</h1>
-                    <p className="text-xl">제가 뭐라고 불러드리면 좋을까요?</p>
+                    <p className="text-xl">첫 로그인을 환영합니다! 닉네임을 설정해주세요.</p>
                 </div>
 
                 <div className="w-full mb-8">
@@ -71,20 +71,30 @@ const NicknameSetup = () => {
                         onChange={(e) => setNickname(e.target.value)}
                         placeholder="김혼잡"
                         className="w-full p-4 border border-gray-300 rounded-full text-center text-xl"
+                        autoFocus
                     />
-                    <p className="text-center text-gray-500 mt-2 text-sm">* 닉네임은 나중에 바꿀 수 있어요</p>
+                    <p className="text-center text-gray-500 mt-2 text-sm">
+                        * 닉네임은 나중에 마이페이지에서 변경할 수 있어요
+                    </p>
                     {error && <p className="text-center text-red-500 mt-2">{error}</p>}
                 </div>
 
                 <button
                     onClick={handleNextClick}
                     disabled={isLoading || !nickname.trim()}
-                    className={`bg-gray-800 text-white rounded-full py-4 px-12 w-full text-xl ${
+                    className={`bg-gray-800 text-white rounded-full py-4 px-12 w-full text-xl mb-4 ${
                         isLoading ? 'opacity-70' : ''
                     }`}
                 >
-                    {isLoading ? '처리중...' : '다음'}
+                    {isLoading ? '처리중...' : '시작하기'}
                 </button>
+
+                <p className="text-center text-gray-500 text-sm">
+                    닉네임을 지금 설정하지 않으시려면{' '}
+                    <button onClick={() => navigate('/home')} className="text-blue-500 underline">
+                        건너뛰기
+                    </button>
+                </p>
             </div>
         </div>
     );

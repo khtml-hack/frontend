@@ -24,7 +24,7 @@ const Signup = () => {
 
             if (res.user) {
                 // 성공 시 로그인 페이지로 이동
-                navigate('/onboarding');
+                navigate('/login');
             } else if (res.error) {
                 // 서버에서 반환한 구체적인 오류 메시지 표시
                 setError(

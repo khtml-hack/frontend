@@ -1,24 +1,112 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
+import { useKakaoMap, searchPlace } from '../hooks/useKakaoMap';
 
 const Home = () => {
     const [departure, setDeparture] = useState('');
     const [destination, setDestination] = useState('');
     const [showDepartureModal, setShowDepartureModal] = useState(false);
     const [nickname, setNickname] = useState('김혼잡');
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchType, setSearchType] = useState('departure'); // 'departure' or 'destination'
+    const kakaoMapLoaded = useKakaoMap();
     const navigate = useNavigate();
 
-    // 로컬 스토리지에서 닉네임 가져오기
+    // 로컬 스토리지에서 닉네임 및 위치 정보 가져오기
     useEffect(() => {
         const savedNickname = localStorage.getItem('nickname');
         if (savedNickname) {
             setNickname(savedNickname);
         }
+
+        const savedDeparture = localStorage.getItem('departure');
+        if (savedDeparture) {
+            setDeparture(savedDeparture);
+        }
+
+        const savedDestination = localStorage.getItem('destination');
+        if (savedDestination) {
+            setDestination(savedDestination);
+        }
     }, []);
 
     const handleFindOptimalTime = () => {
         if (departure && destination) {
+            // 출발지와 도착지 정보를 로컬 스토리지에 저장하여 다른 페이지에서도 사용할 수 있게 함
+            localStorage.setItem('departure', departure);
+            localStorage.setItem('destination', destination);
             navigate('/time-recommendations');
+        } else {
+            // 입력이 부족할 경우 모달을 표시하거나 알림을 줄 수 있음
+            if (!departure) {
+                setSearchType('departure');
+                setShowDepartureModal(true);
+            } else if (!destination) {
+                setSearchType('destination');
+                setShowDepartureModal(true);
+            }
+        }
+    };
+
+    // 장소 검색 함수
+    const handlePlaceSearch = () => {
+        if (!searchKeyword.trim() || !kakaoMapLoaded) return;
+
+        setIsSearching(true);
+        setSearchResults([]); // 검색 시작 시 이전 결과 초기화
+
+        searchPlace(searchKeyword, (results) => {
+            setSearchResults(results);
+            setIsSearching(false);
+        });
+    };
+
+    // 장소 선택 함수
+    const handleSelectPlace = (place) => {
+        if (searchType === 'departure') {
+            setDeparture(place.place_name);
+        } else {
+            setDestination(place.place_name);
+        }
+        setShowDepartureModal(false);
+        setSearchKeyword('');
+        setSearchResults([]);
+    };
+
+    // 현재 위치 사용 함수
+    const handleUseCurrentLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    // 좌표를 주소로 변환 (카카오맵 API 사용)
+                    if (kakaoMapLoaded && window.kakao && window.kakao.maps) {
+                        const geocoder = new window.kakao.maps.services.Geocoder();
+                        geocoder.coord2Address(longitude, latitude, (result, status) => {
+                            if (status === window.kakao.maps.services.Status.OK) {
+                                const address = result[0].address;
+                                const addressName = address.address_name || '현재 위치';
+                                if (searchType === 'departure') {
+                                    setDeparture(addressName);
+                                } else {
+                                    setDestination(addressName);
+                                }
+                                setShowDepartureModal(false);
+                            } else {
+                                alert('현재 위치를 가져오는데 실패했습니다.');
+                            }
+                        });
+                    }
+                },
+                (error) => {
+                    console.error('위치 정보 가져오기 오류:', error);
+                    alert('위치 정보를 가져올 수 없습니다.');
+                }
+            );
+        } else {
+            alert('이 브라우저에서는 위치 정보를 지원하지 않습니다.');
         }
     };
 
@@ -45,15 +133,22 @@ const Home = () => {
                     </div>
 
                     {/* Search Inputs */}
-                    <div className="space-y-2 mb-4">
-                        <div className="rounded-xl overflow-hidden border border-purple-200">
+                    <div className="space-y-2 mb-4 relative">
+                        <div
+                            className={`rounded-xl overflow-hidden border ${
+                                departure ? 'border-purple-200' : 'border-purple-200 border-2'
+                            }`}
+                        >
                             <div className="relative">
                                 <input
                                     type="text"
                                     placeholder="출발지 입력"
                                     value={departure}
                                     onChange={(e) => setDeparture(e.target.value)}
-                                    onClick={() => setShowDepartureModal(true)}
+                                    onClick={() => {
+                                        setSearchType('departure');
+                                        setShowDepartureModal(true);
+                                    }}
                                     className="w-full bg-transparent text-gray-800 placeholder-gray-500 text-sm py-3.5 px-4 border-none outline-none"
                                     readOnly
                                 />
@@ -84,14 +179,65 @@ const Home = () => {
                             </div>
                         </div>
 
-                        <div className="rounded-xl overflow-hidden border border-purple-200">
+                        {/* Swap Button */}
+                        {(departure || destination) && (
+                            <button
+                                className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center border border-purple-200 shadow-sm"
+                                onClick={() => {
+                                    const temp = departure;
+                                    setDeparture(destination);
+                                    setDestination(temp);
+                                }}
+                            >
+                                <svg
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                >
+                                    <path
+                                        d="M7 10L3 14L7 18"
+                                        stroke="#7C3AED"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                    <path
+                                        d="M17 14L21 10L17 6"
+                                        stroke="#7C3AED"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                    <line
+                                        x1="3"
+                                        y1="14"
+                                        x2="21"
+                                        y2="14"
+                                        stroke="#7C3AED"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                    />
+                                </svg>
+                            </button>
+                        )}
+
+                        <div
+                            className={`rounded-xl overflow-hidden border ${
+                                destination ? 'border-purple-200' : 'border-purple-200 border-2'
+                            }`}
+                        >
                             <div className="relative">
                                 <input
                                     type="text"
                                     placeholder="도착지 입력"
                                     value={destination}
                                     onChange={(e) => setDestination(e.target.value)}
-                                    onClick={() => setShowDepartureModal(true)}
+                                    onClick={() => {
+                                        setSearchType('destination');
+                                        setShowDepartureModal(true);
+                                    }}
                                     className="w-full bg-transparent text-gray-800 placeholder-gray-500 text-sm py-3.5 px-4 border-none outline-none"
                                     readOnly
                                 />
@@ -127,21 +273,28 @@ const Home = () => {
                     <div className="mb-8">
                         <button
                             onClick={handleFindOptimalTime}
-                            className="w-full py-3.5 bg-gray-300 text-gray-600 rounded-xl font-medium text-base"
+                            disabled={!departure || !destination}
+                            className={`w-full py-3.5 rounded-xl font-medium text-base transition-all duration-200 ${
+                                departure && destination
+                                    ? 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
+                                    : 'bg-gray-300 text-gray-600'
+                            }`}
                         >
-                            AI 최적 시간 찾기
+                            {!departure || !destination
+                                ? `${!departure ? '출발지' : '도착지'} 입력 필요`
+                                : 'AI 최적 시간 찾기'}
                         </button>
                     </div>
 
                     {/* Regional Currency Info Card */}
                     <div className="mt-6">
                         <h3 className="text-sm text-zinc-400 mb-2">나의 지역화폐 현황 및 사용</h3>
-                        <div className="bg-green-500 text-white rounded-2xl p-5">
+                        <div className="bg-green-500 text-white rounded-2xl px-5 py-4">
                             <div className="flex items-baseline justify-between">
                                 <span className="font-semibold">나의 지역화폐 현황</span>
                                 <span className="text-xl font-extrabold">2,500원</span>
                             </div>
-                            <div className="mt-4 flex gap-2 justify-end">
+                            <div className="mt-3 flex gap-2">
                                 <button className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm">
                                     적립/사용내역
                                 </button>
@@ -186,10 +339,23 @@ const Home = () => {
                 {/* Departure Modal */}
                 {showDepartureModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
-                        <div className="bg-white w-full max-w-[420px] mx-auto rounded-t-2xl p-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="text-gray-800 text-lg font-medium">어디서 출발하시나요?</h3>
-                                <button onClick={() => setShowDepartureModal(false)} className="text-gray-500">
+                        <div
+                            className="bg-white w-full max-w-[420px] mx-auto rounded-t-2xl p-6"
+                            style={{ maxHeight: '80vh', overflowY: 'auto' }}
+                        >
+                            <div className="flex items-center justify-between mb-6 sticky top-0 bg-white py-2">
+                                <h3 className="text-gray-800 text-lg font-medium">
+                                    {searchType === 'departure' ? '어디서 출발하시나요?' : '어디로 가시나요?'}
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        setShowDepartureModal(false);
+                                        setSearchKeyword('');
+                                        setSearchResults([]);
+                                        setIsSearching(false);
+                                    }}
+                                    className="text-gray-500"
+                                >
                                     <svg
                                         width="24"
                                         height="24"
@@ -244,11 +410,85 @@ const Home = () => {
                                     <input
                                         type="text"
                                         placeholder="출발지 검색"
+                                        value={searchKeyword}
+                                        onChange={(e) => setSearchKeyword(e.target.value)}
+                                        onKeyPress={(e) => {
+                                            if (e.key === 'Enter') {
+                                                handlePlaceSearch();
+                                            }
+                                        }}
                                         className="bg-transparent text-gray-800 flex-1 outline-none"
                                     />
+                                    {searchKeyword && (
+                                        <button onClick={() => setSearchKeyword('')} className="text-gray-500">
+                                            <svg
+                                                width="16"
+                                                height="16"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    d="M18 6L6 18"
+                                                    stroke="#666666"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                                <path
+                                                    d="M6 6L18 18"
+                                                    stroke="#666666"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                            </svg>
+                                        </button>
+                                    )}
                                 </div>
 
-                                <div className="border border-gray-200 rounded-xl p-4 flex items-center gap-3">
+                                <button
+                                    onClick={handlePlaceSearch}
+                                    disabled={!searchKeyword.trim() || !kakaoMapLoaded || isSearching}
+                                    className={`w-full py-2.5 rounded-xl font-medium text-sm flex items-center justify-center ${
+                                        searchKeyword.trim() && kakaoMapLoaded && !isSearching
+                                            ? 'bg-purple-600 text-white'
+                                            : 'bg-gray-200 text-gray-400'
+                                    }`}
+                                >
+                                    {isSearching ? (
+                                        <>
+                                            <svg
+                                                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle
+                                                    className="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    strokeWidth="4"
+                                                ></circle>
+                                                <path
+                                                    className="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                ></path>
+                                            </svg>
+                                            검색 중...
+                                        </>
+                                    ) : (
+                                        '검색하기'
+                                    )}
+                                </button>
+
+                                <div
+                                    className="border border-gray-200 rounded-xl p-4 flex items-center gap-3"
+                                    onClick={handleUseCurrentLocation}
+                                >
                                     <span className="text-purple-600">
                                         <svg
                                             width="20"
@@ -275,6 +515,63 @@ const Home = () => {
                                     </span>
                                     <span className="text-purple-600 font-medium">현재 위치로 찾기</span>
                                 </div>
+
+                                {/* 검색 결과 목록 */}
+                                {isSearching ? (
+                                    <div className="py-8 text-center">
+                                        <div className="inline-block mx-auto animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-600 mb-2"></div>
+                                        <p className="text-gray-500 text-sm">장소를 검색하고 있습니다...</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {searchResults.length > 0 && (
+                                            <div className="mt-3">
+                                                <h4 className="text-gray-500 text-sm mb-2">검색 결과</h4>
+                                                <div className="max-h-[40vh] overflow-y-auto">
+                                                    {searchResults.map((place, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
+                                                            onClick={() => handleSelectPlace(place)}
+                                                        >
+                                                            <div className="font-medium text-gray-800 mb-0.5">
+                                                                {place.place_name}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500">
+                                                                {place.address_name}
+                                                            </div>
+                                                            {place.road_address_name && (
+                                                                <div className="text-xs text-gray-400">
+                                                                    {place.road_address_name}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {searchKeyword.trim() && searchResults.length === 0 && !isSearching && (
+                                            <div className="text-center py-6 mt-3">
+                                                <svg
+                                                    className="mx-auto h-12 w-12 text-gray-300"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={1.5}
+                                                        d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                    />
+                                                </svg>
+                                                <p className="text-gray-500 mt-2">검색 결과가 없습니다.</p>
+                                                <p className="text-gray-400 text-sm">다른 키워드로 검색해보세요.</p>
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
                         </div>
                     </div>
