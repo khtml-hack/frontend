@@ -1,5 +1,5 @@
-
 import React, { useEffect, useRef, useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import BottomSheet from '../components/BottomSheet';
 
 // 카카오 SDK 동적 로더
@@ -343,6 +343,26 @@ export default function PartnerStores() {
                 )}
             </div>
 
+            {/* 하단 탭 */}
+            <nav className="sticky bottom-0 border-t bg-white">
+                <ul className="flex justify-around py-3 text-[18px]">
+                    <li>
+                        <NavLink to="/stores" className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}>
+                            결제매장
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to="/home" className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}>
+                            홈
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to="/mypage" className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}>
+                            마이페이지
+                        </NavLink>
+                    </li>
+                </ul>
+            </nav>
         </div>
     );
 }

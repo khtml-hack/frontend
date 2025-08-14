@@ -184,7 +184,7 @@ export default function MyPage() {
                             </li>
                             <li>
                                 <NavLink
-                                    to="/"
+                                    to="/home"
                                     className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}
                                 >
                                     홈
