@@ -45,16 +45,6 @@ const Signup = () => {
 
     return (
         <div className="mobile-frame">
-            {/* Status Bar */}
-            <div className="status-bar">
-                <div className="font-semibold">9:41</div>
-                <div className="flex items-center gap-1">
-                    <div className="w-6 h-3 border border-black rounded-sm">
-                        <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                    </div>
-                </div>
-            </div>
-
             {/* Content */}
             <div className="flex flex-col h-full px-8">
                 <div className="flex-1 flex flex-col justify-center">
@@ -117,9 +107,6 @@ const Signup = () => {
                     <p className="text-lg font-extrabold peak-green">Peak down</p>
                 </div>
             </div>
-
-            {/* Home Indicator */}
-            <div className="home-indicator"></div>
         </div>
     );
 };

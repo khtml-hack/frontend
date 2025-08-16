@@ -63,16 +63,6 @@ const Login = () => {
 
     return (
         <div className="mobile-frame">
-            {/* Status Bar */}
-            <div className="status-bar">
-                <div className="font-semibold">9:41</div>
-                <div className="flex items-center gap-1">
-                    <div className="w-6 h-3 border border-black rounded-sm">
-                        <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                    </div>
-                </div>
-            </div>
-
             {/* Content */}
             <div className="flex flex-col h-full px-8">
                 <div className="flex-1 flex flex-col justify-center">
@@ -107,16 +97,6 @@ const Login = () => {
                         {isLoading ? '로그인 중...' : '로그인'}
                     </button>
                     {error && <div className="text-red-500 text-sm text-center mb-2">{error}</div>}
-                    {/* 테스트 용도: 로컬 스토리지 확인 */}
-                    <button
-                        onClick={() => {
-                            const token = localStorage.getItem('accessToken');
-                            setError(token ? '토큰이 있습니다: ' + token.substring(0, 10) + '...' : '토큰이 없습니다');
-                        }}
-                        className="text-xs text-gray-400 underline mb-2"
-                    >
-                        토큰 확인
-                    </button>{' '}
                     <button
                         onClick={() => navigate('/signup')}
                         className="text-center text-gray-500 text-base underline"
@@ -130,9 +110,6 @@ const Login = () => {
                     <p className="text-lg font-extrabold peak-green">Peak down</p>
                 </div>
             </div>
-
-            {/* Home Indicator */}
-            <div className="home-indicator"></div>
         </div>
     );
 };

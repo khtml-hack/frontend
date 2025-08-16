@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useKakaoMap, searchPlace, getCurrentLocation } from '../hooks/useKakaoMap';
+import { getRoutes, createRoute, deleteRoute } from '../api/routeApi';
 
 const FavoriteLocations = () => {
     const navigate = useNavigate();
@@ -12,18 +13,13 @@ const FavoriteLocations = () => {
     const [isSearching, setIsSearching] = useState(false);
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [userLocation, setUserLocation] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const kakaoMapLoaded = useKakaoMap();
 
     // 즐겨찾기 위치 로드
     useEffect(() => {
-        const saved = localStorage.getItem('favoriteLocations');
-        if (saved) {
-            try {
-                setFavoriteLocations(JSON.parse(saved));
-            } catch (e) {
-                console.error('즐겨찾기 위치 로드 오류:', e);
-            }
-        }
+        loadFavoriteLocations();
 
         // 현재 위치 가져오기
         getCurrentLocation()
@@ -37,7 +33,58 @@ const FavoriteLocations = () => {
             });
     }, []);
 
-    // 즐겨찾기 위치 저장
+    // 백엔드에서 즐겨찾기 위치 로드
+    const loadFavoriteLocations = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('accessToken');
+
+            if (!token) {
+                // 토큰이 없으면 로컬 스토리지에서 로드
+                const saved = localStorage.getItem('favoriteLocations');
+                if (saved) {
+                    setFavoriteLocations(JSON.parse(saved));
+                }
+                return;
+            }
+
+            const routes = await getRoutes(token);
+
+            // API 응답을 기존 형식에 맞게 변환
+            const convertedRoutes = routes.map((route) => ({
+                id: route.id,
+                name: route.route_type,
+                placeName: route.address,
+                address: route.address,
+                roadAddress: route.address,
+                x: route.lng,
+                y: route.lat,
+                backendId: route.id, // 백엔드 ID 저장
+            }));
+
+            setFavoriteLocations(convertedRoutes);
+
+            // 로컬 스토리지에도 백업 저장
+            localStorage.setItem('favoriteLocations', JSON.stringify(convertedRoutes));
+        } catch (error) {
+            console.error('즐겨찾기 위치 로드 오류:', error);
+            setError('저장된 경로를 불러오는데 실패했습니다.');
+
+            // 백엔드 오류 시 로컬 스토리지에서 로드
+            const saved = localStorage.getItem('favoriteLocations');
+            if (saved) {
+                try {
+                    setFavoriteLocations(JSON.parse(saved));
+                } catch (e) {
+                    console.error('로컬 스토리지 로드 오류:', e);
+                }
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // 즐겨찾기 위치 저장 (삭제)
     const saveFavoriteLocations = (locations) => {
         try {
             localStorage.setItem('favoriteLocations', JSON.stringify(locations));
@@ -72,32 +119,102 @@ const FavoriteLocations = () => {
     };
 
     // 즐겨찾기 위치 추가
-    const handleAddFavorite = () => {
+    const handleAddFavorite = async () => {
         if (!newLocationName.trim() || !selectedLocation) return;
 
-        const newFavorite = {
-            id: Date.now(),
-            name: newLocationName.trim(),
-            placeName: selectedLocation.place_name,
-            address: selectedLocation.address_name,
-            roadAddress: selectedLocation.road_address_name,
-            x: selectedLocation.x,
-            y: selectedLocation.y,
-        };
+        try {
+            setLoading(true);
+            setError('');
+            const token = localStorage.getItem('accessToken');
 
-        const updated = [...favoriteLocations, newFavorite];
-        saveFavoriteLocations(updated);
+            // 좌표 값 검증 및 정밀도 조정
+            const lat = parseFloat(selectedLocation.y);
+            const lng = parseFloat(selectedLocation.x);
 
-        // 초기화
-        setNewLocationName('');
-        setSelectedLocation(null);
-        setShowAddModal(false);
+            if (isNaN(lat) || isNaN(lng)) {
+                throw new Error('유효하지 않은 좌표 정보입니다.');
+            }
+
+            // 좌표값을 소수점 6자리로 반올림 (GPS 정밀도 약 0.1미터, 9자리 제한 준수)
+            const roundedLat = Number(lat.toFixed(6));
+            const roundedLng = Number(lng.toFixed(6));
+
+            // 백엔드 API 형식에 맞게 데이터 구성
+            const routeData = {
+                route_type: newLocationName.trim(),
+                address: selectedLocation.place_name || selectedLocation.address_name || '주소 정보 없음',
+                lat: roundedLat,
+                lng: roundedLng,
+            };
+
+            console.log('Sending route data:', routeData);
+            console.log('Original coordinates:', { lat, lng });
+            console.log('Rounded coordinates:', { lat: roundedLat, lng: roundedLng });
+
+            if (token) {
+                // 토큰이 있으면 백엔드에 저장
+                const savedRoute = await createRoute(routeData, token);
+
+                // 새로운 즐겨찾기 위치 객체 생성
+                const newFavorite = {
+                    id: savedRoute.id,
+                    name: savedRoute.route_type,
+                    placeName: savedRoute.address,
+                    address: savedRoute.address,
+                    roadAddress: savedRoute.address,
+                    x: savedRoute.lng,
+                    y: savedRoute.lat,
+                    backendId: savedRoute.id,
+                };
+
+                const updated = [...favoriteLocations, newFavorite];
+                setFavoriteLocations(updated);
+
+                // 로컬 스토리지에도 백업
+                localStorage.setItem('favoriteLocations', JSON.stringify(updated));
+            } else {
+                throw new Error('로그인이 필요합니다.');
+            }
+
+            // 초기화
+            setNewLocationName('');
+            setSelectedLocation(null);
+            setShowAddModal(false);
+        } catch (error) {
+            console.error('즐겨찾기 위치 추가 오류:', error);
+            setError(error.message || '경로 저장에 실패했습니다. 다시 시도해주세요.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // 즐겨찾기 위치 삭제
-    const handleDeleteFavorite = (id) => {
-        const updated = favoriteLocations.filter((loc) => loc.id !== id);
-        saveFavoriteLocations(updated);
+    const handleDeleteFavorite = async (id) => {
+        try {
+            setLoading(true);
+            setError('');
+            const token = localStorage.getItem('accessToken');
+
+            // 삭제할 위치 찾기
+            const locationToDelete = favoriteLocations.find((loc) => loc.id === id);
+
+            if (token && locationToDelete?.backendId) {
+                // 백엔드에서 삭제
+                await deleteRoute(locationToDelete.backendId, token);
+            }
+
+            // 로컬 상태에서 삭제
+            const updated = favoriteLocations.filter((loc) => loc.id !== id);
+            setFavoriteLocations(updated);
+
+            // 로컬 스토리지 업데이트
+            localStorage.setItem('favoriteLocations', JSON.stringify(updated));
+        } catch (error) {
+            console.error('즐겨찾기 위치 삭제 오류:', error);
+            setError('경로 삭제에 실패했습니다. 다시 시도해주세요.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     // 현재 위치 가져오기
@@ -159,19 +276,41 @@ const FavoriteLocations = () => {
 
                 {/* Content */}
                 <main className="flex-1 p-5">
-                    {favoriteLocations.length === 0 ? (
+                    {/* 에러 메시지 */}
+                    {error && (
+                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-4">
+                            {error}
+                            <button
+                                onClick={() => setError('')}
+                                className="float-right text-red-500 hover:text-red-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    )}
+
+                    {/* 로딩 상태 */}
+                    {loading && (
+                        <div className="text-center py-8">
+                            <div className="inline-block mx-auto animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-600 mb-2"></div>
+                            <p className="text-gray-500 text-sm">처리 중...</p>
+                        </div>
+                    )}
+
+                    {favoriteLocations.length === 0 && !loading ? (
                         <div className="text-center py-12">
                             <div className="text-6xl mb-4">📍</div>
                             <h3 className="text-lg font-medium mb-2">자주 가는 장소가 없습니다</h3>
                             <p className="text-gray-500 mb-6">집, 회사, 학교 등 자주 가는 장소를 등록해보세요.</p>
                             <button
                                 onClick={() => setShowAddModal(true)}
-                                className="bg-purple-600 text-white px-6 py-3 rounded-xl font-medium"
+                                disabled={loading}
+                                className="bg-purple-600 text-white px-6 py-3 rounded-xl font-medium disabled:opacity-50"
                             >
                                 첫 번째 장소 추가하기
                             </button>
                         </div>
-                    ) : (
+                    ) : favoriteLocations.length > 0 ? (
                         <div className="space-y-3">
                             {favoriteLocations.map((location) => (
                                 <div key={location.id} className="bg-gray-50 rounded-xl p-4">
@@ -215,7 +354,7 @@ const FavoriteLocations = () => {
                                 </div>
                             ))}
                         </div>
-                    )}
+                    ) : null}
                 </main>
 
                 {/* Add Modal */}
@@ -454,14 +593,40 @@ const FavoriteLocations = () => {
                                 {/* 저장 버튼 */}
                                 <button
                                     onClick={handleAddFavorite}
-                                    disabled={!newLocationName.trim() || !selectedLocation}
-                                    className={`w-full py-3 rounded-xl font-medium ${
-                                        newLocationName.trim() && selectedLocation
+                                    disabled={!newLocationName.trim() || !selectedLocation || loading}
+                                    className={`w-full py-3 rounded-xl font-medium flex items-center justify-center ${
+                                        newLocationName.trim() && selectedLocation && !loading
                                             ? 'bg-purple-600 text-white'
                                             : 'bg-gray-200 text-gray-400'
                                     }`}
                                 >
-                                    저장하기
+                                    {loading ? (
+                                        <>
+                                            <svg
+                                                className="animate-spin -ml-1 mr-2 h-4 w-4"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle
+                                                    className="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    strokeWidth="4"
+                                                ></circle>
+                                                <path
+                                                    className="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                ></path>
+                                            </svg>
+                                            저장 중...
+                                        </>
+                                    ) : (
+                                        '저장하기'
+                                    )}
                                 </button>
                             </div>
                         </div>

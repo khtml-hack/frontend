@@ -29,16 +29,6 @@ const TimeRecommendations = () => {
     if (!analysisComplete) {
         return (
             <div className="mobile-frame">
-                {/* Status Bar */}
-                <div className="status-bar">
-                    <div className="font-semibold">9:41</div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-3 border border-black rounded-sm">
-                            <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Progress Line */}
                 <div className="progress-line">
                     <div className="h-full bg-green-500 w-full"></div>
@@ -61,9 +51,6 @@ const TimeRecommendations = () => {
                         <p className="text-gray-400">잠시만 기다려주세요!</p>
                     </div>
                 </div>
-
-                {/* Home Indicator */}
-                <div className="home-indicator"></div>
             </div>
         );
     }
@@ -110,16 +97,6 @@ const TimeRecommendations = () => {
 
     return (
         <div className="mobile-frame">
-            {/* Status Bar */}
-            <div className="status-bar">
-                <div className="font-semibold">9:41</div>
-                <div className="flex items-center gap-1">
-                    <div className="w-6 h-3 border border-black rounded-sm">
-                        <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                    </div>
-                </div>
-            </div>
-
             {/* Header Background */}
             <div className="bg-gray-100 h-72 relative">
                 {/* Peak Down Logo */}
@@ -199,9 +176,6 @@ const TimeRecommendations = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Home Indicator */}
-            <div className="home-indicator"></div>
         </div>
     );
 };

@@ -57,16 +57,6 @@ const RecommendationAccepted = () => {
     if (arrivalDetected) {
         return (
             <div className="mobile-frame">
-                {/* Status Bar */}
-                <div className="status-bar">
-                    <div className="font-semibold">10:06</div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-3 border border-black rounded-sm">
-                            <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Map Background */}
                 <div className="h-96 bg-gray-200 relative">
                     <div className="absolute inset-0 bg-gray-300 opacity-50"></div>
@@ -123,9 +113,6 @@ const RecommendationAccepted = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Home Indicator */}
-                <div className="home-indicator"></div>
             </div>
         );
     }
@@ -133,16 +120,6 @@ const RecommendationAccepted = () => {
     if (departureDetected) {
         return (
             <div className="mobile-frame">
-                {/* Status Bar */}
-                <div className="status-bar">
-                    <div className="font-semibold">10:06</div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-3 border border-black rounded-sm">
-                            <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Map Background */}
                 <div className="h-96 bg-gray-200 relative">
                     <div className="absolute inset-0 bg-gray-300 opacity-50"></div>
@@ -191,9 +168,6 @@ const RecommendationAccepted = () => {
                     </div>
                 </div>
 
-                {/* Home Indicator */}
-                <div className="home-indicator"></div>
-
                 {/* Departure Detection Modal */}
                 <div className="absolute inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
                     <div className="bg-white rounded-2xl p-8 m-8 max-w-sm w-full text-center">
@@ -212,16 +186,6 @@ const RecommendationAccepted = () => {
 
     return (
         <div className="mobile-frame">
-            {/* Status Bar */}
-            <div className="status-bar">
-                <div className="font-semibold">10:06</div>
-                <div className="flex items-center gap-1">
-                    <div className="w-6 h-3 border border-black rounded-sm">
-                        <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                    </div>
-                </div>
-            </div>
-
             {/* Header Background */}
             <div className="bg-gray-100 h-72 relative">
                 <div className="px-8 pt-8">
@@ -305,9 +269,6 @@ const RecommendationAccepted = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Home Indicator */}
-            <div className="home-indicator"></div>
         </div>
     );
 };

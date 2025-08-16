@@ -46,16 +46,6 @@ const NicknameSetup = () => {
 
     return (
         <div className="mobile-frame">
-            {/* Status Bar */}
-            <div className="status-bar">
-                <div className="font-semibold">9:41</div>
-                <div className="flex items-center gap-1">
-                    <div className="w-6 h-3 border border-black rounded-sm">
-                        <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                    </div>
-                </div>
-            </div>
-
             {/* Content */}
             <div className="flex flex-col items-center justify-center h-full px-8">
                 <div className="text-center mb-8">

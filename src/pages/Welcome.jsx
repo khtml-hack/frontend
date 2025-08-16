@@ -6,16 +6,6 @@ const Welcome = () => {
 
     return (
         <div className="mobile-frame">
-            {/* Status Bar */}
-            <div className="status-bar">
-                <div className="font-semibold">9:41</div>
-                <div className="flex items-center gap-1">
-                    <div className="w-6 h-3 border border-black rounded-sm">
-                        <div className="w-5 h-2 bg-black rounded-sm m-0.5"></div>
-                    </div>
-                </div>
-            </div>
-
             {/* Content */}
             <div className="flex flex-col items-center justify-center h-full px-8">
                 <h1 className="text-6xl font-extrabold peak-green tracking-tight mb-16 text-center leading-tight">
@@ -43,12 +33,8 @@ const Welcome = () => {
             <div className="absolute bottom-8 left-0 right-0 text-center">
                 <p className="text-lg font-extrabold peak-green">Peak down</p>
             </div>
-
-            {/* Home Indicator */}
-            <div className="home-indicator"></div>
         </div>
     );
 };
 
 export default Welcome;
-
