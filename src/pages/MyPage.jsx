@@ -128,7 +128,10 @@ export default function MyPage() {
                                     </button>
                                 </li>
                                 <li>
-                                    <button className="flex w-full items-center justify-between px-4 py-3">
+                                    <button
+                                        className="flex w-full items-center justify-between px-4 py-3"
+                                        onClick={() => navigate('/favorite-locations')}
+                                    >
                                         <span>자주가는 경로 관리</span>
                                         <span className="text-zinc-400">›</span>
                                     </button>

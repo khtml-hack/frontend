@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
-import { useKakaoMap, searchPlace } from '../hooks/useKakaoMap';
+import { useKakaoMap, searchPlace, getCurrentLocation } from '../hooks/useKakaoMap';
 
 const Home = () => {
     const [departure, setDeparture] = useState('');
@@ -11,10 +11,12 @@ const Home = () => {
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
     const [searchType, setSearchType] = useState('departure'); // 'departure' or 'destination'
+    const [favoriteLocations, setFavoriteLocations] = useState([]);
+    const [userLocation, setUserLocation] = useState(null);
     const kakaoMapLoaded = useKakaoMap();
     const navigate = useNavigate();
 
-    // 로컬 스토리지에서 닉네임 및 위치 정보 가져오기
+    // 로컬 스토리지에서 닉네임, 위치 정보, 즐겨찾기 위치 가져오기
     useEffect(() => {
         const savedNickname = localStorage.getItem('nickname');
         if (savedNickname) {
@@ -30,6 +32,26 @@ const Home = () => {
         if (savedDestination) {
             setDestination(savedDestination);
         }
+
+        const savedFavorites = localStorage.getItem('favoriteLocations');
+        if (savedFavorites) {
+            try {
+                setFavoriteLocations(JSON.parse(savedFavorites));
+            } catch (e) {
+                console.error('즐겨찾기 위치 로드 오류:', e);
+            }
+        }
+
+        // 현재 위치 가져오기
+        getCurrentLocation()
+            .then((location) => {
+                setUserLocation(location);
+                console.log('현재 위치 획득:', location);
+            })
+            .catch((error) => {
+                console.log('현재 위치 획득 실패:', error);
+                // 위치 권한이 없어도 앱은 정상 작동
+            });
     }, []);
 
     const handleFindOptimalTime = () => {
@@ -57,10 +79,14 @@ const Home = () => {
         setIsSearching(true);
         setSearchResults([]); // 검색 시작 시 이전 결과 초기화
 
-        searchPlace(searchKeyword, (results) => {
-            setSearchResults(results);
-            setIsSearching(false);
-        });
+        searchPlace(
+            searchKeyword,
+            (results) => {
+                setSearchResults(results);
+                setIsSearching(false);
+            },
+            userLocation
+        ); // 현재 위치를 전달하여 거리순 정렬
     };
 
     // 장소 선택 함수
@@ -69,6 +95,18 @@ const Home = () => {
             setDeparture(place.place_name);
         } else {
             setDestination(place.place_name);
+        }
+        setShowDepartureModal(false);
+        setSearchKeyword('');
+        setSearchResults([]);
+    };
+
+    // 즐겨찾기 위치 선택 함수
+    const handleSelectFavorite = (favorite) => {
+        if (searchType === 'departure') {
+            setDeparture(favorite.placeName);
+        } else {
+            setDestination(favorite.placeName);
         }
         setShowDepartureModal(false);
         setSearchKeyword('');
@@ -409,7 +447,7 @@ const Home = () => {
                                     </span>
                                     <input
                                         type="text"
-                                        placeholder="출발지 검색"
+                                        placeholder={searchType === 'departure' ? '출발지 검색' : '도착지 검색'}
                                         value={searchKeyword}
                                         onChange={(e) => setSearchKeyword(e.target.value)}
                                         onKeyPress={(e) => {
@@ -515,6 +553,54 @@ const Home = () => {
                                     </span>
                                     <span className="text-purple-600 font-medium">현재 위치로 찾기</span>
                                 </div>
+
+                                {/* 즐겨찾기 위치 목록 */}
+                                {favoriteLocations.length > 0 && (
+                                    <div className="mt-4">
+                                        <h4 className="text-gray-500 text-sm mb-2 flex items-center gap-2">
+                                            <svg
+                                                width="16"
+                                                height="16"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                                <path
+                                                    d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
+                                                    fill="#FFA500"
+                                                    stroke="#FFA500"
+                                                    strokeWidth="1"
+                                                />
+                                            </svg>
+                                            자주 가는 장소
+                                        </h4>
+                                        <div className="space-y-2">
+                                            {favoriteLocations.map((favorite) => (
+                                                <div
+                                                    key={favorite.id}
+                                                    className="border border-gray-200 rounded-xl p-3 hover:bg-gray-50 cursor-pointer"
+                                                    onClick={() => handleSelectFavorite(favorite)}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                                                            <span className="text-orange-600 text-sm font-medium">
+                                                                {favorite.name.charAt(0)}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="font-medium text-gray-800 text-sm">
+                                                                {favorite.name}
+                                                            </div>
+                                                            <div className="text-xs text-gray-500">
+                                                                {favorite.placeName}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
 
                                 {/* 검색 결과 목록 */}
                                 {isSearching ? (

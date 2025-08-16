@@ -14,6 +14,7 @@ import QRUse from './pages/QRUse';
 import PointHistory from './pages/PointHistory';
 import MyPage from './pages/MyPage';
 import NicknameSetup from './pages/NicknameSetup';
+import FavoriteLocations from './pages/FavoriteLocations';
 
 function App() {
     return (
@@ -33,6 +34,7 @@ function App() {
                 <Route path="/point-history" element={<PointHistory />} />
                 <Route path="/mypage" element={<MyPage />} />
                 <Route path="/nickname-setup" element={<NicknameSetup />} />
+                <Route path="/favorite-locations" element={<FavoriteLocations />} />
             </Routes>
         </div>
     );

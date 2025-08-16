@@ -53,8 +53,8 @@ export const useKakaoMap = () => {
     return kakaoMapLoaded;
 };
 
-// 카카오맵 장소 검색 함수
-export const searchPlace = (keyword, callback) => {
+// 카카오맵 장소 검색 함수 (현재 위치 기준)
+export const searchPlace = (keyword, callback, userLocation = null) => {
     if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
         console.error('카카오맵 API가 로드되지 않았습니다.');
         return;
@@ -62,14 +62,57 @@ export const searchPlace = (keyword, callback) => {
 
     const places = new window.kakao.maps.services.Places();
 
-    places.keywordSearch(keyword, (result, status) => {
-        if (status === window.kakao.maps.services.Status.OK) {
-            callback(result);
-        } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
-            callback([]);
-        } else {
-            console.error('카카오맵 검색 에러:', status);
-            callback([]);
+    // 검색 옵션 설정
+    const options = {
+        size: 15, // 검색 결과 개수 (최대 15개)
+        sort: window.kakao.maps.services.Places.SORT_DISTANCE, // 거리순 정렬
+    };
+
+    // 사용자 위치가 제공된 경우, 해당 위치 기준으로 검색
+    if (userLocation && userLocation.latitude && userLocation.longitude) {
+        options.location = new window.kakao.maps.LatLng(userLocation.latitude, userLocation.longitude);
+        options.radius = 20000; // 반경 20km 내에서 검색
+    }
+
+    places.keywordSearch(
+        keyword,
+        (result, status) => {
+            if (status === window.kakao.maps.services.Status.OK) {
+                callback(result);
+            } else if (status === window.kakao.maps.services.Status.ZERO_RESULT) {
+                callback([]);
+            } else {
+                console.error('카카오맵 검색 에러:', status);
+                callback([]);
+            }
+        },
+        options
+    );
+};
+
+// 현재 위치를 가져오는 함수
+export const getCurrentLocation = () => {
+    return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+            reject(new Error('Geolocation is not supported'));
+            return;
         }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                resolve({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                });
+            },
+            (error) => {
+                reject(error);
+            },
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 300000, // 5분간 캐시
+            }
+        );
     });
 };

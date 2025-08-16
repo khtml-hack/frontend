@@ -3,9 +3,17 @@ import { useNavigate } from 'react-router-dom';
 
 const TimeRecommendations = () => {
     const [analysisComplete, setAnalysisComplete] = useState(false);
+    const [departure, setDeparture] = useState('');
+    const [destination, setDestination] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
+        // 로컬 스토리지에서 출발지와 도착지 정보 가져오기
+        const savedDeparture = localStorage.getItem('departure') || '출발지';
+        const savedDestination = localStorage.getItem('destination') || '도착지';
+        setDeparture(savedDeparture);
+        setDestination(savedDestination);
+
         // 분석 로딩 시뮬레이션
         const timer = setTimeout(() => {
             setAnalysisComplete(true);
@@ -132,9 +140,10 @@ const TimeRecommendations = () => {
             {/* Route Info */}
             <div className="px-8 -mt-16 mb-6">
                 <div className="bg-white rounded-xl p-4 mb-6 border">
-                    <div className="text-center text-gray-800 text-lg">한국외국어대학교 → 강남역</div>
-                </div>
-
+                    <div className="text-center text-gray-800 text-lg">
+                        {departure} → {destination}
+                    </div>
+                </div>{' '}
                 {/* Current Status */}
                 <div className="bg-gray-100 rounded-2xl p-6 mb-6">
                     <div className="text-center">
@@ -143,7 +152,6 @@ const TimeRecommendations = () => {
                         <p className="text-gray-700">예상 혼잡도: 🟠 혼잡</p>
                     </div>
                 </div>
-
                 {/* Recommendations */}
                 <div className="space-y-4 mb-6">
                     {recommendations.map((rec) => (
