@@ -1,13 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { startTrip, arriveTrip } from '../api/tripApi';
 
 const RecommendationAccepted = () => {
     const [timeLeft, setTimeLeft] = useState(30 * 60); // 30분 in seconds
     const [departureDetected, setDepartureDetected] = useState(false);
     const [arrivalDetected, setArrivalDetected] = useState(false);
+    const [tripId, setTripId] = useState(null);
+    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const location = useLocation();
-    const recommendation = location.state?.recommendation;
+
+    // 전달받은 데이터 구조 업데이트
+    const { selectedRecommendation, originalApiData, departure, destination } = location.state || {};
+
+    // 실제 출발 시간까지 남은 시간 계산
+    useEffect(() => {
+        if (selectedRecommendation?.rawData?.optimal_departure_time) {
+            const now = new Date();
+            const [hours, minutes] = selectedRecommendation.rawData.optimal_departure_time.split(':').map(Number);
+            const departureTime = new Date();
+            departureTime.setHours(hours, minutes, 0, 0);
+
+            // 만약 출발 시간이 과거라면 다음날로 설정
+            if (departureTime <= now) {
+                departureTime.setDate(departureTime.getDate() + 1);
+            }
+
+            const timeDiff = Math.floor((departureTime - now) / 1000);
+            setTimeLeft(Math.max(timeDiff, 0));
+        }
+    }, [selectedRecommendation]);
 
     useEffect(() => {
         const timer = setInterval(() => {
@@ -23,25 +46,83 @@ const RecommendationAccepted = () => {
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
-        // 5분 후 출발 감지 시뮬레이션
-        const departureTimer = setTimeout(() => {
+    // 여행 시작 API 호출
+    const handleStartTrip = async () => {
+        if (!originalApiData?.recommendation_id) {
+            console.warn('추천 ID가 없어 여행을 시작할 수 없습니다.');
             setDepartureDetected(true);
-        }, 5000);
+            return;
+        }
 
-        return () => clearTimeout(departureTimer);
-    }, []);
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                console.warn('토큰이 없어 여행 시작 API를 호출할 수 없습니다.');
+                setDepartureDetected(true);
+                return;
+            }
+
+            const tripResult = await startTrip(originalApiData.recommendation_id, token);
+            setTripId(tripResult.id);
+            setDepartureDetected(true);
+        } catch (error) {
+            console.error('여행 시작 실패:', error);
+            // 에러가 발생해도 UI는 계속 진행
+            setDepartureDetected(true);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        // 출발 감지 후 10초 뒤 도착 감지 시뮬레이션
-        if (departureDetected) {
-            const arrivalTimer = setTimeout(() => {
+        // 출발 시간이 되면 여행 시작
+        if (timeLeft <= 5 * 60 && !departureDetected && !loading) {
+            // 5분 전
+            handleStartTrip();
+        }
+    }, [timeLeft, departureDetected, loading]);
+
+    // 여행 완료 API 호출
+    const handleArriveTrip = async () => {
+        if (!tripId) {
+            console.warn('여행 ID가 없어 도착 처리를 할 수 없습니다.');
+            setArrivalDetected(true);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                console.warn('토큰이 없어 도착 API를 호출할 수 없습니다.');
                 setArrivalDetected(true);
-            }, 10000);
+                return;
+            }
+
+            const arrivalResult = await arriveTrip(tripId, token);
+            console.log('도착 처리 완료:', arrivalResult);
+            setArrivalDetected(true);
+        } catch (error) {
+            console.error('도착 처리 실패:', error);
+            // 에러가 발생해도 UI는 계속 진행
+            setArrivalDetected(true);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        // 출발 감지 후 실제 여행 시간만큼 후 도착 처리
+        if (departureDetected && selectedRecommendation?.rawData?.expected_duration_min) {
+            const durationMs = selectedRecommendation.rawData.expected_duration_min * 60 * 1000;
+            const arrivalTimer = setTimeout(() => {
+                handleArriveTrip();
+            }, Math.min(durationMs, 10000)); // 최대 10초로 제한 (데모용)
 
             return () => clearTimeout(arrivalTimer);
         }
-    }, [departureDetected]);
+    }, [departureDetected, selectedRecommendation, tripId]);
 
     const formatTime = (seconds) => {
         const hours = Math.floor(seconds / 3600);
@@ -67,7 +148,9 @@ const RecommendationAccepted = () => {
                     <h1 className="text-4xl font-extrabold peak-green tracking-tight mb-4">Peak _down</h1>
 
                     <div className="bg-white rounded-xl p-4 mb-6">
-                        <div className="text-center text-gray-800 text-lg">한국외국어대학교 → 강남역</div>
+                        <div className="text-center text-gray-800 text-lg">
+                            {departure || '출발지'} → {destination || '도착지'}
+                        </div>
                     </div>
 
                     <div className="bg-white rounded-2xl p-6 text-center mb-6">
@@ -130,7 +213,9 @@ const RecommendationAccepted = () => {
                     <h1 className="text-4xl font-extrabold peak-green tracking-tight mb-4">Peak _down</h1>
 
                     <div className="bg-gray-200 rounded-xl p-4 mb-6">
-                        <div className="text-center text-gray-800 text-lg">한국외국어대학교 → 강남역</div>
+                        <div className="text-center text-gray-800 text-lg">
+                            {departure || '출발지'} → {destination || '도착지'}
+                        </div>
                     </div>
 
                     <div className="bg-white rounded-2xl p-6 text-center mb-6">
@@ -193,7 +278,9 @@ const RecommendationAccepted = () => {
                     <div className="mt-4">
                         <p className="text-black text-2xl font-semibold leading-tight">
                             {canDepart
-                                ? '지금 출발하면 8분을 아낄 수 있어요!'
+                                ? `지금 출발하면 ${
+                                      selectedRecommendation?.rawData?.time_saved_min || 8
+                                  }분을 아낄 수 있어요!`
                                 : '탁월한 선택이에요! 가장 여유로운 길이 열릴 때까지 잠시만 기다려주세요.'}
                         </p>
                     </div>
@@ -203,10 +290,18 @@ const RecommendationAccepted = () => {
             {/* Content */}
             <div className="px-8 -mt-16">
                 <div className="bg-white rounded-xl p-4 mb-6">
-                    <div className="text-center text-gray-800 text-lg">한국외국어대학교 → 강남역</div>
+                    <div className="text-center text-gray-800 text-lg">
+                        {departure || '출발지'} → {destination || '도착지'}
+                    </div>
                 </div>
 
-                {canDepart && <p className="text-2xl font-semibold text-center mb-6">오전 10:11에 출발하세요</p>}
+                {canDepart && (
+                    <p className="text-2xl font-semibold text-center mb-6">
+                        {selectedRecommendation?.rawData?.optimal_departure_time
+                            ? `${selectedRecommendation.rawData.optimal_departure_time}에 출발하세요`
+                            : '지금 출발하세요'}
+                    </p>
+                )}
 
                 {/* Timer */}
                 <div className="text-center mb-6">

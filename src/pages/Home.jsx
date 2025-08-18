@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useKakaoMap, searchPlace, getCurrentLocation } from '../hooks/useKakaoMap';
+import { getTripRecommendation } from '../api/tripApi';
 
 const Home = () => {
     const [departure, setDeparture] = useState('');
@@ -13,6 +14,8 @@ const Home = () => {
     const [searchType, setSearchType] = useState('departure'); // 'departure' or 'destination'
     const [favoriteLocations, setFavoriteLocations] = useState([]);
     const [userLocation, setUserLocation] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
     const kakaoMapLoaded = useKakaoMap();
     const navigate = useNavigate();
 
@@ -54,14 +57,9 @@ const Home = () => {
             });
     }, []);
 
-    const handleFindOptimalTime = () => {
-        if (departure && destination) {
-            // 출발지와 도착지 정보를 로컬 스토리지에 저장하여 다른 페이지에서도 사용할 수 있게 함
-            localStorage.setItem('departure', departure);
-            localStorage.setItem('destination', destination);
-            navigate('/time-recommendations');
-        } else {
-            // 입력이 부족할 경우 모달을 표시하거나 알림을 줄 수 있음
+    const handleFindOptimalTime = async () => {
+        if (!departure || !destination) {
+            // 입력이 부족할 경우 모달을 표시
             if (!departure) {
                 setSearchType('departure');
                 setShowDepartureModal(true);
@@ -69,6 +67,46 @@ const Home = () => {
                 setSearchType('destination');
                 setShowDepartureModal(true);
             }
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            setError('');
+
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            // 출발지와 도착지 정보를 로컬 스토리지에 저장
+            localStorage.setItem('departure', departure);
+            localStorage.setItem('destination', destination);
+
+            // AI 추천 API 호출
+            const recommendation = await getTripRecommendation(
+                departure,
+                destination,
+                '110000', // 서울 지역 코드 (기본값)
+                token
+            );
+
+            // 추천 결과를 로컬 스토리지에 저장하여 다음 페이지에서 사용
+            localStorage.setItem('tripRecommendation', JSON.stringify(recommendation));
+
+            // 시간 추천 페이지로 이동
+            navigate('/time-recommendations');
+        } catch (error) {
+            console.error('AI 추천 요청 실패:', error);
+            setError('AI 추천 요청에 실패했습니다. 다시 시도해주세요.');
+
+            // 에러가 발생해도 기존 페이지로 이동 (fallback)
+            localStorage.setItem('departure', departure);
+            localStorage.setItem('destination', destination);
+            navigate('/time-recommendations');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -307,20 +345,59 @@ const Home = () => {
                         </div>
                     </div>
 
+                    {/* Error Message */}
+                    {error && (
+                        <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+                            {error}
+                            <button
+                                onClick={() => setError('')}
+                                className="float-right text-red-500 hover:text-red-700"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                    )}
+
                     {/* Find Optimal Time Button */}
                     <div className="mb-8">
                         <button
                             onClick={handleFindOptimalTime}
-                            disabled={!departure || !destination}
-                            className={`w-full py-3.5 rounded-xl font-medium text-base transition-all duration-200 ${
-                                departure && destination
+                            disabled={!departure || !destination || isLoading}
+                            className={`w-full py-3.5 rounded-xl font-medium text-base transition-all duration-200 flex items-center justify-center ${
+                                departure && destination && !isLoading
                                     ? 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
                                     : 'bg-gray-300 text-gray-600'
                             }`}
                         >
-                            {!departure || !destination
-                                ? `${!departure ? '출발지' : '도착지'} 입력 필요`
-                                : 'AI 최적 시간 찾기'}
+                            {isLoading ? (
+                                <>
+                                    <svg
+                                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            strokeWidth="4"
+                                        ></circle>
+                                        <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                    </svg>
+                                    AI 분석 중...
+                                </>
+                            ) : !departure || !destination ? (
+                                `${!departure ? '출발지' : '도착지'} 입력 필요`
+                            ) : (
+                                'AI 최적 시간 찾기'
+                            )}
                         </button>
                     </div>
 
