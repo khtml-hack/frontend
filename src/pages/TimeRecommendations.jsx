@@ -45,6 +45,15 @@ const TimeRecommendations = () => {
         return () => clearTimeout(timer);
     }, []);
 
+    useEffect(() => {
+        if (recommendationData && recommendationData.ui) {
+            console.log('current:', recommendationData.ui.current);
+            recommendationData.ui.options?.forEach((opt, idx) => {
+                console.log(`option[${idx}]:`, opt);
+            });
+        }
+    }, [recommendationData]);
+
     const handleSelectRecommendation = (recommendation) => {
         // 선택된 추천과 전체 추천 데이터를 함께 전달
         const selectionData = {
@@ -214,6 +223,46 @@ const TimeRecommendations = () => {
         }
     };
 
+    // 현재 시간과 출발 시간의 차이를 계산하여 버튼 텍스트 생성
+    const getTimeUntilDeparture = (departureTimeStr) => {
+        try {
+            if (departureTimeStr.includes('지금 출발')) {
+                return '지금';
+            }
+
+            // "47분 뒤 출발 (15:00)" 형태에서 시간 추출
+            const timeMatch = departureTimeStr.match(/\((\d{1,2}:\d{2})\)/);
+            if (!timeMatch) return '1시간';
+
+            const departureTime = timeMatch[1];
+            const [depHours, depMinutes] = departureTime.split(':').map(Number);
+
+            const now = new Date();
+            const departure = new Date();
+            departure.setHours(depHours, depMinutes, 0, 0);
+
+            // 출발 시간이 다음날인 경우 처리
+            if (departure < now) {
+                departure.setDate(departure.getDate() + 1);
+            }
+
+            const diffMs = departure.getTime() - now.getTime();
+            const diffMinutes = Math.round(diffMs / (1000 * 60));
+
+            if (diffMinutes < 1) return '지금';
+            if (diffMinutes < 60) return `${diffMinutes}분`;
+
+            const diffHours = Math.floor(diffMinutes / 60);
+            const remainingMinutes = diffMinutes % 60;
+
+            if (remainingMinutes === 0) return `${diffHours}시간`;
+            return `${diffHours}시간 ${remainingMinutes}분`;
+        } catch (e) {
+            console.error('시간 계산 오류:', e);
+            return '1시간';
+        }
+    };
+
     const recommendations = getRecommendationsFromAPI();
 
     return (
@@ -283,7 +332,7 @@ const TimeRecommendations = () => {
                             >
                                 알림 받고
                                 <br />
-                                {rec.time.includes('30분') ? '30분' : rec.time.includes('45분') ? '45분' : '1시간'} 뒤
+                                {getTimeUntilDeparture(rec.time)} 뒤
                                 <br />
                                 출발하기
                             </button>

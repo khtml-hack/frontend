@@ -10,13 +10,14 @@ const Onboarding = () => {
         work: null,
         school: null,
     });
+    const [selectedRoutes, setSelectedRoutes] = useState([]);
     const navigate = useNavigate();
 
     const handleNextStep = () => {
         if (step < 4) {
             setStep(step + 1);
         } else {
-            navigate('/home');
+            navigate('/login');
         }
     };
 
@@ -27,12 +28,43 @@ const Onboarding = () => {
     };
 
     const requestLocationPermission = () => {
-        setLocationPermission(true);
-        handleNextStep();
+        if ('geolocation' in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    // 위치 권한 허용됨
+                    console.log('위치 권한 허용:', position.coords);
+                    setLocationPermission(true);
+                    handleNextStep();
+                },
+                (error) => {
+                    // 위치 권한 거부되거나 오류 발생
+                    console.error('위치 권한 오류:', error);
+                    alert('위치 서비스를 사용할 수 없습니다. 브라우저 설정에서 위치 권한을 허용해주세요.');
+                    // 권한이 거부되어도 다음 단계로 진행 (선택사항)
+                    setLocationPermission(false);
+                    handleNextStep();
+                }
+            );
+        } else {
+            alert('이 브라우저는 위치 서비스를 지원하지 않습니다.');
+            setLocationPermission(false);
+            handleNextStep();
+        }
     };
 
     const getProgressWidth = () => {
         return `${(step / 4) * 100}%`;
+    };
+
+    // 경로 타입 선택/해제 토글
+    const handleRouteToggle = (routeType) => {
+        setSelectedRoutes((prev) => {
+            if (prev.includes(routeType)) {
+                return prev.filter((type) => type !== routeType);
+            } else {
+                return [...prev, routeType];
+            }
+        });
     };
 
     const renderStep1 = () => (
@@ -63,10 +95,14 @@ const Onboarding = () => {
     const renderStep2 = () => (
         <div className="flex flex-col items-center justify-center h-full px-8">
             <h1 className="text-2xl font-medium text-center mb-8 text-black">위치 정보 접근 권한 동의</h1>
-            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8">
-                <p className="text-gray-800 text-base leading-relaxed tracking-tight">
-                    Peak-down은(는) 사용자님의 현재 위치를 기반으로 최적의 출발 시간과 이동 경로를 분석합니다. 원활한
-                    서비스 이용을 위해 위치 정보 접근 권한이 필요합니다.
+            <div className="bg-white border border-gray-200 rounded-xl p-6 mb-8 w-full">
+                <p
+                    className="text-gray-800 text-base leading-relaxed"
+                    style={{ letterSpacing: '-0.8px', lineHeight: '19.09px' }}
+                >
+                    Peak-down은(는) 사용자님의 현재 위치를 기반으로 최적의 출발 시간과 이동 경로를 분석합니다.
+                    <br />
+                    원활한 서비스 이용을 위해 위치 정보 접근 권한이 필요합니다.
                     <br />
                     <br />
                     정확한 서비스 제공을 위한 위치 정보 접근이 필요합니다.
@@ -76,7 +112,15 @@ const Onboarding = () => {
                     언제든지 설정에서 권한을 철회할 수 있습니다.
                 </p>
             </div>
-            <button onClick={requestLocationPermission} className="btn-peak w-full">
+            <button
+                onClick={requestLocationPermission}
+                className={`w-full text-white py-4 rounded-2xl text-xl font-medium ${
+                    locationPermission ? 'bg-gray-800' : 'bg-gray-400'
+                }`}
+                style={{
+                    backgroundColor: locationPermission ? '#363636' : '#cdcdcd',
+                }}
+            >
                 다음
             </button>
         </div>
@@ -90,26 +134,55 @@ const Onboarding = () => {
                 간편하게 시간 추천을 받아보세요!
             </h1>
             <div className="flex gap-4 mb-12">
-                <div className="bg-gray-800 rounded-2xl p-6 flex-1 text-center">
+                <button
+                    onClick={() => handleRouteToggle('집')}
+                    className={`rounded-2xl p-6 flex-1 text-center transition-all duration-200 ${
+                        selectedRoutes.includes('집')
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-800 text-white hover:bg-gray-700'
+                    }`}
+                >
                     <div className="text-2xl mb-2">🏡</div>
-                    <div className="text-white text-base">집</div>
-                    <div className="text-white text-sm mt-2">+ 주소 검색</div>
-                </div>
-                <div className="bg-gray-800 rounded-2xl p-6 flex-1 text-center">
+                    <div className="text-base">집</div>
+                    <div className="text-sm mt-2">{selectedRoutes.includes('집') ? '✓ 선택됨' : '+ 주소 검색'}</div>
+                </button>
+                <button
+                    onClick={() => handleRouteToggle('학교')}
+                    className={`rounded-2xl p-6 flex-1 text-center transition-all duration-200 ${
+                        selectedRoutes.includes('학교')
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-800 text-white hover:bg-gray-700'
+                    }`}
+                >
                     <div className="text-2xl mb-2">🏫</div>
-                    <div className="text-white text-base">학교</div>
-                    <div className="text-white text-sm mt-2">+ 주소 검색</div>
-                </div>
-                <div className="bg-gray-800 rounded-2xl p-6 flex-1 text-center">
+                    <div className="text-base">학교</div>
+                    <div className="text-sm mt-2">{selectedRoutes.includes('학교') ? '✓ 선택됨' : '+ 주소 검색'}</div>
+                </button>
+                <button
+                    onClick={() => handleRouteToggle('직장')}
+                    className={`rounded-2xl p-6 flex-1 text-center transition-all duration-200 ${
+                        selectedRoutes.includes('직장')
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-800 text-white hover:bg-gray-700'
+                    }`}
+                >
                     <div className="text-2xl mb-2">🏢</div>
-                    <div className="text-white text-base">직장</div>
-                    <div className="text-white text-sm mt-2">+ 주소 검색</div>
-                </div>
+                    <div className="text-base">직장</div>
+                    <div className="text-sm mt-2">{selectedRoutes.includes('직장') ? '✓ 선택됨' : '+ 주소 검색'}</div>
+                </button>
             </div>
-            <button onClick={handleNextStep} disabled={true} className="btn-peak w-full mb-4">
-                다음
+            <button
+                onClick={handleNextStep}
+                disabled={selectedRoutes.length === 0}
+                className={`w-full py-4 rounded-2xl text-xl font-medium mb-4 transition-all duration-200 ${
+                    selectedRoutes.length > 0
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }`}
+            >
+                다음 ({selectedRoutes.length}개 선택됨)
             </button>
-            <button onClick={handleNextStep} className="text-gray-500 text-lg">
+            <button onClick={handleNextStep} className="text-gray-500 text-lg hover:text-gray-700">
                 건너뛰기 &gt;
             </button>
         </div>
@@ -125,7 +198,7 @@ const Onboarding = () => {
                 <br />
                 당신의 소중한 시간을 되찾아 보세요.
             </p>
-            <button onClick={() => navigate('/home')} className="btn-peak w-full">
+            <button onClick={() => navigate('/login')} className="btn-peak w-full">
                 Peak-down 시작하기
             </button>
         </div>
