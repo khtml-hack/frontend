@@ -7,11 +7,21 @@ const Signup = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [error, setError] = useState('');
+    const [errors, setErrors] = useState({});
+    const [generalError, setGeneralError] = useState('');
     const navigate = useNavigate();
 
     const handleSignup = async () => {
-        setError('');
+        // 오류 상태 초기화
+        setErrors({});
+        setGeneralError('');
+
+        // 클라이언트 측 기본 검증
+        if (password !== confirmPassword) {
+            setGeneralError('비밀번호가 일치하지 않습니다.');
+            return;
+        }
+
         try {
             const res = await registerUser({
                 email,
@@ -21,27 +31,64 @@ const Signup = () => {
             });
 
             console.log('Signup response:', res); // 디버깅용
+            console.log('Response status:', res.status);
+            console.log('Response success:', res.success);
+            console.log('Response user:', res.user);
+            console.log('Response errors:', res.errors);
+            console.log('Response error:', res.error);
 
-            if (res.user) {
-                // 성공 시 로그인 페이지로 이동
-                navigate('/login');
+            if (res.success && res.user) {
+                // 성공 시 토큰 저장
+                if (res.access) {
+                    localStorage.setItem('accessToken', res.access);
+                    localStorage.setItem('refreshToken', res.refresh);
+                }
+                // 성공 시 온보딩 페이지로 이동
+                navigate('/onboarding');
+            } else if (res.errors) {
+                // 명세서 형식의 오류 처리
+                const serverErrors = res.errors;
+
+                // 필드별 오류 처리
+                const fieldErrors = {};
+                let hasGeneralError = false;
+
+                // 각 필드별 오류 메시지 추출
+                Object.keys(serverErrors).forEach((field) => {
+                    if (field === 'non_field_errors') {
+                        // 일반 오류 (비밀번호 불일치 등)
+                        setGeneralError(
+                            Array.isArray(serverErrors[field]) ? serverErrors[field].join(' ') : serverErrors[field]
+                        );
+                        hasGeneralError = true;
+                    } else {
+                        // 필드별 오류
+                        fieldErrors[field] = Array.isArray(serverErrors[field])
+                            ? serverErrors[field].join(' ')
+                            : serverErrors[field];
+                    }
+                });
+
+                setErrors(fieldErrors);
+
+                // 일반 오류가 없고 필드 오류도 없으면 기본 메시지 표시
+                if (!hasGeneralError && Object.keys(fieldErrors).length === 0) {
+                    setGeneralError('회원가입에 실패했습니다.');
+                }
             } else if (res.error) {
-                // 서버에서 반환한 구체적인 오류 메시지 표시
-                setError(
-                    typeof res.error === 'object'
-                        ? Object.values(res.error).flat().join(', ')
-                        : res.error || '회원가입에 실패했습니다.'
-                );
+                // 네트워크 오류 등
+                setGeneralError(res.error);
             } else {
-                setError(res.message || '회원가입에 실패했습니다.');
+                setGeneralError('회원가입에 실패했습니다.');
             }
         } catch (e) {
             console.error('Signup error:', e); // 디버깅용
-            setError('회원가입 중 오류가 발생했습니다.');
+            setGeneralError('회원가입 중 오류가 발생했습니다.');
         }
     };
 
-    const isFormValid = email && password && confirmPassword && password === confirmPassword;
+    // 기본적인 필수 필드만 체크 (서버에서 상세 검증)
+    const isFormValid = email && password && confirmPassword;
 
     return (
         <div className="mobile-frame">
@@ -51,43 +98,96 @@ const Signup = () => {
                     <h1 className="text-2xl font-medium text-center mb-12 text-black">회원가입</h1>
 
                     <div className="space-y-4 mb-8">
-                        <div className="bg-white border border-gray-300 rounded-2xl p-4">
-                            <input
-                                type="email"
-                                placeholder="이메일"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
-                            />
+                        {/* 이메일 필드 */}
+                        <div>
+                            <div
+                                className={`bg-white border rounded-2xl p-4 ${
+                                    errors.email ? 'border-red-400' : 'border-gray-300'
+                                }`}
+                            >
+                                <input
+                                    type="email"
+                                    placeholder="이메일"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                />
+                            </div>
+                            {errors.email && <div className="text-red-500 text-xs mt-1 px-2">{errors.email}</div>}
                         </div>
-                        <div className="bg-white border border-gray-300 rounded-2xl p-4">
-                            <input
-                                type="text"
-                                placeholder="사용자명 (선택)"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
-                            />
+
+                        {/* 사용자명 필드 */}
+                        <div>
+                            <div
+                                className={`bg-white border rounded-2xl p-4 ${
+                                    errors.username ? 'border-red-400' : 'border-gray-300'
+                                }`}
+                            >
+                                <input
+                                    type="text"
+                                    placeholder="사용자명 (선택)"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                />
+                            </div>
+                            {errors.username && <div className="text-red-500 text-xs mt-1 px-2">{errors.username}</div>}
                         </div>
-                        <div className="bg-white border border-gray-300 rounded-2xl p-4">
-                            <input
-                                type="password"
-                                placeholder="비밀번호"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
-                            />
+
+                        {/* 비밀번호 필드 */}
+                        <div>
+                            <div
+                                className={`bg-white border rounded-2xl p-4 ${
+                                    errors.password ? 'border-red-400' : 'border-gray-300'
+                                }`}
+                            >
+                                <input
+                                    type="password"
+                                    placeholder="비밀번호"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                />
+                            </div>
+                            {errors.password && <div className="text-red-500 text-xs mt-1 px-2">{errors.password}</div>}
                         </div>
-                        <div className="bg-white border border-gray-300 rounded-2xl p-4">
-                            <input
-                                type="password"
-                                placeholder="비밀번호 확인"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
-                            />
+
+                        {/* 비밀번호 확인 필드 */}
+                        <div>
+                            <div
+                                className={`bg-white border rounded-2xl p-4 ${
+                                    errors.password_confirm ||
+                                    (confirmPassword && password && password !== confirmPassword)
+                                        ? 'border-red-400'
+                                        : 'border-gray-300'
+                                }`}
+                            >
+                                <input
+                                    type="password"
+                                    placeholder="비밀번호 확인"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                />
+                            </div>
+                            {errors.password_confirm && (
+                                <div className="text-red-500 text-xs mt-1 px-2">{errors.password_confirm}</div>
+                            )}
+                            {/* 실시간 비밀번호 불일치 체크 */}
+                            {confirmPassword &&
+                                password &&
+                                password !== confirmPassword &&
+                                !errors.password_confirm && (
+                                    <div className="text-red-500 text-xs mt-1 px-2">비밀번호가 일치하지 않습니다.</div>
+                                )}
                         </div>
-                        {error && <div className="text-red-500 text-sm text-center">{error}</div>}
+
+                        {/* 일반 오류 메시지 */}
+                        {generalError && (
+                            <div className="text-red-500 text-sm text-center bg-red-50 border border-red-200 rounded-lg p-3">
+                                {generalError}
+                            </div>
+                        )}
                     </div>
 
                     <button onClick={handleSignup} disabled={!isFormValid} className="btn-peak w-full mb-6">

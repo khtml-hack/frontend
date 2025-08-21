@@ -29,13 +29,37 @@ export async function registerUser(data) {
             console.log('Register response:', jsonRes);
         } catch (e) {
             console.error('Error parsing JSON response:', e);
-            jsonRes = { error: 'Failed to parse server response' };
+            return {
+                success: false,
+                error: 'Failed to parse server response',
+                status: res.status,
+            };
         }
 
-        return jsonRes;
+        // 응답 상태에 따른 처리
+        if (res.ok) {
+            // 200~299 범위의 성공 응답
+            // 명세서에 따라 user, access, refresh가 최상위에 있음
+            return {
+                success: true,
+                ...jsonRes, // user, access, refresh 등을 최상위로
+                status: res.status,
+            };
+        } else {
+            // 400~599 범위의 오류 응답
+            return {
+                success: false,
+                errors: jsonRes, // 명세서 형식의 오류 응답
+                status: res.status,
+            };
+        }
     } catch (error) {
         console.error('Network error:', error);
-        return { error: 'Network error: ' + error.message };
+        return {
+            success: false,
+            error: 'Network error: ' + error.message,
+            status: 0,
+        };
     }
 }
 
