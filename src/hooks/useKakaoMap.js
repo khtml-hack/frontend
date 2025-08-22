@@ -25,6 +25,7 @@ export const useKakaoMap = () => {
 
         // API 키 가져오기
         const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+        console.log('환경변수에서 가져온 API 키:', apiKey ? `존재함 (${apiKey.substring(0, 8)}...)` : '없음');
         if (!apiKey) {
             console.error('카카오맵 API 키가 설정되지 않았습니다.');
             return;
@@ -38,9 +39,15 @@ export const useKakaoMap = () => {
         mapScript.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services&autoload=false`;
 
         mapScript.addEventListener('load', () => {
+            console.log('카카오맵 스크립트 로드 완료');
             window.kakao.maps.load(() => {
+                console.log('카카오맵 초기화 완료');
                 setKakaoMapLoaded(true);
             });
+        });
+
+        mapScript.addEventListener('error', (error) => {
+            console.error('카카오맵 스크립트 로드 실패:', error);
         });
 
         document.head.appendChild(mapScript);

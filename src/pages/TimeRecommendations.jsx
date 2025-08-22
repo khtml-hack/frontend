@@ -7,6 +7,7 @@ const TimeRecommendations = () => {
     const [destination, setDestination] = useState('');
     const [recommendationData, setRecommendationData] = useState(null);
     const [nickname, setNickname] = useState('김혼잡');
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -164,6 +165,13 @@ const TimeRecommendations = () => {
             console.log('🔧 처리할 옵션들:', options);
             options.forEach((option, index) => {
                 console.log(`🔧 옵션 ${index}:`, option);
+
+                // 백엔드에서 필수 필드가 누락된 경우 에러 표시
+                const timeSaved =
+                    option.time_saved_min !== undefined ? `${option.time_saved_min}분 절약` : '⚠️ 절약시간 누락';
+                const reward =
+                    option.reward_amount !== undefined ? `${option.reward_amount}원 획득` : '⚠️ 보상금액 누락';
+
                 recommendations.push({
                     id: `option-${index}`,
                     title: option.title || '[AI 추천]',
@@ -171,8 +179,8 @@ const TimeRecommendations = () => {
                     arrivalTime: calculateArrivalTime(option.optimal_departure_time, option.expected_duration_min),
                     duration: `${option.expected_duration_min || 25}분`,
                     traffic: getTrafficIcon(option.congestion_level || 2),
-                    savings: `${option.time_saved_min || 5}분 절약`,
-                    reward: `${option.reward_amount || 50}원 획득`,
+                    savings: timeSaved,
+                    reward: reward,
                     priority: index === 0 ? '최적 시간' : `${index + 1}순위`,
                     bgColor: index === 0 ? 'bg-green-500' : 'bg-orange-400',
                     selected: index === 0,
@@ -275,11 +283,8 @@ const TimeRecommendations = () => {
                         &lt;
                     </button>
                     <h1 className="text-4xl font-extrabold peak-green tracking-tight">Peak _down</h1>
-                    <div className="flex items-center justify-between mt-4">
-                        <div>
-                            <p className="text-black text-2xl font-semibold leading-tight">AI 최적 시간 분석 완료!</p>
-                        </div>
-                        <button className="p-2">🔔</button>
+                    <div className="mt-4">
+                        <p className="text-black text-2xl font-semibold leading-tight">AI 최적 시간 분석 완료!</p>
                     </div>
                 </div>
             </div>
