@@ -26,14 +26,18 @@ const Home = () => {
             setNickname(savedNickname);
         }
 
-        const savedDeparture = localStorage.getItem('departure');
-        if (savedDeparture) {
-            setDeparture(savedDeparture);
-        }
+        // 온보딩을 완료한 사용자만 저장된 출발지/도착지 로드
+        const onboardingCompleted = localStorage.getItem('onboardingCompleted');
+        if (onboardingCompleted === 'true') {
+            const savedDeparture = localStorage.getItem('departure');
+            if (savedDeparture) {
+                setDeparture(savedDeparture);
+            }
 
-        const savedDestination = localStorage.getItem('destination');
-        if (savedDestination) {
-            setDestination(savedDestination);
+            const savedDestination = localStorage.getItem('destination');
+            if (savedDestination) {
+                setDestination(savedDestination);
+            }
         }
 
         const savedFavorites = localStorage.getItem('favoriteLocations');
