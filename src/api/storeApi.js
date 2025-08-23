@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://peakdown.site/api';
+const RAW_BASE = import.meta.env.VITE_API_BASE_URL || 'https://peakdown.site/';
 
 export const storeApi = {
     // 제휴 상점 목록 조회
