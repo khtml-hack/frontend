@@ -1,15 +1,22 @@
 import React from 'react';
 import BottomTap from '../components/BottomTap';
 import BeforeIcon from '../assets/Before.png';
+import { useNavigate } from 'react-router-dom';
 
 const PointHistory = () => {
+    const navigate = useNavigate();
     return (
         // 화면 높이 기준 세로 레이아웃 + 모바일 폭 제한
         <div className="container-mobile mx-auto w-full max-w-[420px] min-h-[100dvh] flex flex-col bg-zinc-100 py-6">
             {/* 헤더: 아이콘(좌) + 중앙 타이틀 + 투명 스페이서(우) */}
             <div className="pt-[40px] mb-6 px-4">
                 <div className="grid grid-cols-[auto_1fr_auto] items-center">
-                    <img src={BeforeIcon} alt="before" className="w-[10px] h-[10px]" />
+                    <img
+                        src={BeforeIcon}
+                        alt="before"
+                        className="w-[10px] h-[10px]"
+                        onClick={() => navigate('/mypage')}
+                    />
                     <h1 className="text-center text-[23px] font-bold">적립 / 사용 내역</h1>
                     <span className="w-4 h-4 invisible" aria-hidden="true" />
                 </div>
