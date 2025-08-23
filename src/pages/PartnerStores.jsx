@@ -225,7 +225,7 @@ export default function PartnerStores() {
         map.panTo(pos);
     };
 
-    // 🔍 검색 실행 함수 (아이콘 클릭/엔터)
+    // 검색 실행 함수 (아이콘 클릭/엔터)
     const runSearch = () => {
         const v = inputRef.current?.value ?? '';
         setSearchQuery(v.trim());
@@ -266,38 +266,9 @@ export default function PartnerStores() {
                         </button>
                     </div>
 
-                    {/* 필터 버튼들 */}
-                    <div className="flex gap-2">
-                        <select
-                            value={selectedRegion}
-                            onChange={(e) => setSelectedRegion(e.target.value)}
-                            className="px-3 py-1 bg-white/95 rounded-lg text-sm"
-                        >
-                            <option value="">전체 지역</option>
-                            {filterOptions.regions.map((region) => (
-                                <option key={region} value={region}>
-                                    {region}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="px-3 py-1 bg-white/95 rounded-lg text-sm"
-                        >
-                            <option value="">전체 업종</option>
-                            {filterOptions.categories.map((category) => (
-                                <option key={category} value={category}>
-                                    {category}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
                     <button
                         onClick={() => setQrOpen(true)}
-                        className="absolute left-0 top-[84px] flex items-center gap-2 rounded-full bg-green-600 px-4 py-2 text-white shadow-lg active:scale-[.98]"
+                        className="absolute left-0 top-[54px] flex items-center gap-2 rounded-full bg-green-600 px-4 py-2 text-white shadow-lg active:scale-[.98]"
                     >
                         <span className="text-[13px] font-semibold">매장에서 QR로 결제하기</span>
                     </button>
