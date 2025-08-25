@@ -159,11 +159,14 @@ export default function MyPage() {
                                 <span className="text-xl font-extrabold">2,500원</span>
                             </div>
                             <div className="mt-3 flex gap-2">
-                                <button className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm">
+                                <button
+                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                    onClick={() => navigate('/point-history')}
+                                >
                                     적립/사용내역
                                 </button>
                                 <button
-                                    onClick={() => setQrOpen(true)}
+                                    onClick={() => navigate('/stores')}
                                     className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
                                 >
                                     사용하러 가기
@@ -203,31 +206,6 @@ export default function MyPage() {
                             </li>
                         </ul>
                     </nav>
-                )}
-
-                {/* QR 모달 */}
-                {qrOpen && (
-                    <div
-                        className="fixed inset-0 z-50 flex items-center justify-center p-6"
-                        onClick={() => setQrOpen(false)}
-                        role="dialog"
-                        aria-modal="true"
-                        aria-label="내 QR코드"
-                    >
-                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-                        <div
-                            className="relative z-10 w-full max-w-xs rounded-2xl bg-white p-4 shadow-lg"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <img src="/qr.png" alt="내 QR코드" className="w-full h-auto rounded-md" />
-                            <button
-                                onClick={() => setQrOpen(false)}
-                                className="mt-4 w-full rounded-xl bg-green-600 py-2 text-white active:scale-[.98]"
-                            >
-                                닫기
-                            </button>
-                        </div>
-                    </div>
                 )}
 
                 {/* 닉네임 변경 모달 */}

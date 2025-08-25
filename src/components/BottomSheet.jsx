@@ -99,7 +99,7 @@ export default function BottomSheet({
 
     return (
         <div
-            className={`absolute inset-x-0 bottom-0 z-40 rounded-t-2xl bg-white shadow-[0_-8px_24px_rgba(0,0,0,.15)] ${className}`}
+            className={`absolute w-[393px] bottom-0 z-40 rounded-t-2xl bg-white shadow-[0_-8px_24px_rgba(0,0,0,.15)] ${className}`}
             style={{
                 transform: `translateY(${y}px)`,
                 transition: transitionOn ? 'transform 160ms ease-out' : 'none',

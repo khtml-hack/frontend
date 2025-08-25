@@ -1,6 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import BottomSheet from '../components/BottomSheet';
+import BottomTap from '../components/BottomTap';
+import QrModal from '../components/QrModal';
+import SearchIcon from '../assets/Search.png';
 
 // 카카오 SDK 동적 로더
 function loadKakaoSdk() {
@@ -31,7 +34,7 @@ function loadKakaoSdk() {
 }
 
 // 🔥 API 호출 함수들
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'; // 환경변수 또는 기본값
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://peakdown.site'; // 환경변수 또는 기본값
 
 // 지도용 마커 데이터 가져오기
 async function fetchMapMarkers(region = '', category = '', limit = 500) {
@@ -100,6 +103,7 @@ export default function PartnerStores() {
     const mapElRef = useRef(null);
     const mapRef = useRef(null);
     const markersRef = useRef([]); // 🔥 마커들 관리
+    const inputRef = useRef(null); // 🔍 검색 인풋 ref
 
     const [containerReady, setContainerReady] = useState(false);
     const [merchants, setMerchants] = useState([]); // 🔥 실제 상점 데이터
@@ -108,6 +112,7 @@ export default function PartnerStores() {
     const [selectedRegion, setSelectedRegion] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [filterOptions, setFilterOptions] = useState({ regions: [], categories: [] });
+    const [qrOpen, setQrOpen] = useState(false);
 
     // 컨테이너 높이 준비 체크
     useEffect(() => {
@@ -155,7 +160,6 @@ export default function PartnerStores() {
 
                             // 🔥 마커 클릭 이벤트 (선택사항)
                             window.kakao.maps.event.addListener(marker, 'click', () => {
-                                // 해당 상점으로 바텀시트 스크롤하거나 상세 정보 표시
                                 flyTo(store.latitude, store.longitude);
                             });
 
@@ -221,10 +225,16 @@ export default function PartnerStores() {
         map.panTo(pos);
     };
 
-    // 🔥 검색 핸들러
-    const handleSearch = (e) => {
-        if (e.key === 'Enter' || e.type === 'blur') {
-            setSearchQuery(e.target.value);
+    // 검색 실행 함수 (아이콘 클릭/엔터)
+    const runSearch = () => {
+        const v = inputRef.current?.value ?? '';
+        setSearchQuery(v.trim());
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            runSearch();
+            e.currentTarget.blur();
         }
     };
 
@@ -232,107 +242,100 @@ export default function PartnerStores() {
         <div className="mobile-frame">
             <div ref={containerRef} className="mx-auto w-full max-w-[420px] relative overflow-hidden h-[100dvh]">
                 {/* 지도 캔버스 */}
-                <div ref={mapElRef} className="absolute inset-0" />
+                <div ref={mapElRef} className="absolute inset-0 z-0" />
 
                 {/* 🔥 검색창 + 필터 */}
                 <div className="absolute left-1/2 top-3 w-[90%] -translate-x-1/2 z-10 space-y-2">
-                    <input
-                        className="w-full rounded-xl bg-white/95 px-4 py-3 shadow placeholder:text-zinc-400"
-                        placeholder="매장명으로 찾기"
-                        onKeyDown={handleSearch}
-                        onBlur={handleSearch}
-                    />
-
-                    {/* 필터 버튼들 */}
-                    <div className="flex gap-2">
-                        <select
-                            value={selectedRegion}
-                            onChange={(e) => setSelectedRegion(e.target.value)}
-                            className="px-3 py-1 bg-white/95 rounded-lg text-sm"
+                    {/* 검색 인풋 + 아이콘 */}
+                    <div className="relative">
+                        <input
+                            ref={inputRef}
+                            className="w-full rounded-xl bg-white/95 px-4 py-3 pr-10 shadow placeholder:text-zinc-400"
+                            placeholder="매장명으로 찾기"
+                            onKeyDown={handleKeyDown}
+                            defaultValue={searchQuery}
+                        />
+                        <button
+                            type="button"
+                            onClick={runSearch}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 grid place-items-center rounded-full hover:bg-zinc-100 active:scale-[.98] transition"
+                            aria-label="검색"
+                            title="검색"
                         >
-                            <option value="">전체 지역</option>
-                            {filterOptions.regions.map((region) => (
-                                <option key={region} value={region}>
-                                    {region}
-                                </option>
-                            ))}
-                        </select>
-
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="px-3 py-1 bg-white/95 rounded-lg text-sm"
-                        >
-                            <option value="">전체 업종</option>
-                            {filterOptions.categories.map((category) => (
-                                <option key={category} value={category}>
-                                    {category}
-                                </option>
-                            ))}
-                        </select>
+                            <img src={SearchIcon} alt="" className="h-5 w-5 opacity-70" />
+                        </button>
                     </div>
+
+                    <button
+                        onClick={() => setQrOpen(true)}
+                        className="absolute left-0 top-[54px] flex items-center gap-2 rounded-full bg-green-600 px-4 py-2 text-white shadow-lg active:scale-[.98]"
+                    >
+                        <span className="text-[13px] font-semibold">매장에서 QR로 결제하기</span>
+                    </button>
                 </div>
 
                 {/* 바텀시트 */}
                 {containerReady && (
-                    <BottomSheet
-                        containerRef={containerRef}
-                        snapPoints={[0.18, 0.55, 1]}
-                        defaultSnap={1}
-                        header={
-                            <div className="flex items-center justify-between">
-                                <span className="text-base font-semibold">가까운 매장</span>
-                                <span className="text-sm text-zinc-500">
-                                    {loading ? '로딩 중...' : `${merchants.length}개`}
-                                </span>
-                            </div>
-                        }
-                    >
-                        <div className="p-4">
-                            {loading ? (
-                                <div className="text-center py-8 text-zinc-500">로딩 중...</div>
-                            ) : merchants.length === 0 ? (
-                                <div className="text-center py-8 text-zinc-500">검색 결과가 없습니다.</div>
-                            ) : (
-                                <ul className="divide-y">
-                                    {merchants.map((store, i) => (
-                                        <li key={store.id || i} className="px-4 py-3">
-                                            <button
-                                                onClick={() => flyTo(store.latitude, store.longitude)}
-                                                className="w-full text-left"
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-[11px] rounded-md bg-zinc-100 px-2 py-0.5">
-                                                                {store.카테고리 || store.category}
-                                                            </span>
-                                                            <span className="font-semibold">
-                                                                {store.시설명 || store.name}
-                                                            </span>
-                                                        </div>
-                                                        <div className="mt-1 text-xs text-zinc-500">
-                                                            {store.소재지 || store.address}
-                                                        </div>
-                                                        {store.전화번호 && (
-                                                            <div className="mt-1 text-xs text-blue-500">
-                                                                {store.전화번호}
+                    <div className="fixed bottom-[56px] mx-auto z-30 w-full max-w-[420px]">
+                        <BottomSheet
+                            containerRef={containerRef}
+                            snapPoints={[0.18, 0.55, 1]}
+                            defaultSnap={1}
+                            header={
+                                <div className="flex items-center justify-between">
+                                    <span className="text-base font-semibold">가까운 매장</span>
+                                    <span className="text-sm text-zinc-500">
+                                        {loading ? '로딩 중...' : `${merchants.length}개`}
+                                    </span>
+                                </div>
+                            }
+                        >
+                            <div className="p-4">
+                                {loading ? (
+                                    <div className="text-center py-8 text-zinc-500">로딩 중...</div>
+                                ) : merchants.length === 0 ? (
+                                    <div className="text-center py-8 text-zinc-500">검색 결과가 없습니다.</div>
+                                ) : (
+                                    <ul className="divide-y">
+                                        {merchants.map((store, i) => (
+                                            <li key={store.id || i} className="px-4 py-3">
+                                                <button
+                                                    onClick={() => flyTo(store.latitude, store.longitude)}
+                                                    className="w-full text-left"
+                                                >
+                                                    <div className="flex items-center justify-between">
+                                                        <div>
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[11px] rounded-md bg-zinc-100 px-2 py-0.5">
+                                                                    {store.카테고리 || store.category}
+                                                                </span>
+                                                                <span className="font-semibold">
+                                                                    {store.시설명 || store.name}
+                                                                </span>
                                                             </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-right">
-                                                        <div className="text-xs text-zinc-500">
-                                                            {store.지역 || store.region}
+                                                            <div className="mt-1 text-xs text-zinc-500">
+                                                                {store.소재지 || store.address}
+                                                            </div>
+                                                            {store.전화번호 && (
+                                                                <div className="mt-1 text-xs text-blue-500">
+                                                                    {store.전화번호}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-xs text-zinc-500">
+                                                                {store.지역 || store.region}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    </BottomSheet>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        </BottomSheet>
+                    </div>
                 )}
 
                 {/* 로딩 인디케이터 */}
@@ -344,25 +347,8 @@ export default function PartnerStores() {
             </div>
 
             {/* 하단 탭 */}
-            <nav className="sticky bottom-0 border-t bg-white">
-                <ul className="flex justify-around py-3 text-[18px]">
-                    <li>
-                        <NavLink to="/stores" className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}>
-                            결제매장
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/home" className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}>
-                            홈
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/mypage" className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}>
-                            마이페이지
-                        </NavLink>
-                    </li>
-                </ul>
-            </nav>
+            <BottomTap />
+            <QrModal open={qrOpen} onClose={() => setQrOpen(false)} src="/qr.png" />
         </div>
     );
 }
