@@ -123,7 +123,7 @@ h6 {
 }
 
 .progress-line {
-    height: 1px;
+    height: 2px;
     background: #dddddd;
     position: relative;
 }

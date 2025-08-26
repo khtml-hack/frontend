@@ -40,14 +40,11 @@ const Login = () => {
                 localStorage.setItem('accessToken', res.access);
                 localStorage.setItem('refreshToken', res.refresh);
 
-                // 첫 로그인인 경우 닉네임 설정 페이지로 이동
-                if (!res.nickname || res.nickname === '' || res.nickname_required) {
-                    navigate('/nickname-setup');
-                } else {
-                    // 닉네임이 이미 설정되어 있으면 홈 페이지로 이동
+                // 닉네임이 있으면 저장하고 홈으로 이동
+                if (res.nickname) {
                     localStorage.setItem('nickname', res.nickname);
-                    navigate('/home');
                 }
+                navigate('/home');
             } else if (res.error) {
                 setError(res.error);
             } else {
@@ -64,50 +61,53 @@ const Login = () => {
     return (
         <div className="mobile-frame">
             {/* Content */}
-            <div className="flex flex-col h-full px-8">
+            <div className="flex flex-col h-full px-8 pt-20">
                 <div className="flex-1 flex flex-col justify-center">
-                    <h1 className="text-2xl font-medium text-center mb-12 text-black">로그인</h1>
-                    <div className="space-y-4 mb-8">
-                        <div className="bg-white border border-gray-300 rounded-2xl p-4">
+                    <h1 className="text-2xl font-medium text-left mb-8 text-black">로그인</h1>
+
+                    <div className="space-y-4 mb-16">
+                        <div className="bg-white border border-gray-300 rounded-2xl px-5 py-4">
                             <input
                                 type="email"
-                                placeholder="이메일"
+                                placeholder="이메일 "
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && password && handleLogin()}
-                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base outline-none"
                             />
                         </div>
-                        <div className="bg-white border border-gray-300 rounded-2xl p-4">
+                        <div className="bg-white border border-gray-300 rounded-2xl px-5 py-4">
                             <input
                                 type="password"
                                 placeholder="비밀번호"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && email && handleLogin()}
-                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base outline-none"
                             />
                         </div>
                     </div>
+
                     <button
                         onClick={handleLogin}
                         disabled={isLoading || !email || !password}
-                        className={`btn-peak w-full mb-6 ${isLoading ? 'opacity-70' : ''}`}
+                        className={`w-full py-4 rounded-2xl text-xl font-medium mb-16 ${
+                            email && password ? 'bg-gray-700 text-white' : 'bg-gray-300 text-gray-200'
+                        } ${isLoading ? 'opacity-70' : ''}`}
                     >
                         {isLoading ? '로그인 중...' : '로그인'}
                     </button>
-                    {error && <div className="text-red-500 text-sm text-center mb-2">{error}</div>}
-                    <button
-                        onClick={() => navigate('/signup')}
-                        className="text-center text-gray-500 text-base underline"
-                    >
+
+                    {error && <div className="text-red-500 text-sm text-center mb-4">{error}</div>}
+
+                    <button onClick={() => navigate('/signup')} className="text-center text-gray-500 text-sm">
                         계정이 없으신가요?
                     </button>
                 </div>
 
                 {/* Footer */}
                 <div className="pb-8 text-center">
-                    <p className="text-lg font-extrabold peak-green">Peak down</p>
+                    <p className="text-lg font-extrabold peak-green">Peak_down</p>
                 </div>
             </div>
         </div>
