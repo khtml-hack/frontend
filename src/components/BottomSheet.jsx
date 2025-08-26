@@ -1,43 +1,79 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
-/**
- * 모바일 프레임 내부 전용 BottomSheet
- * - containerRef: 기준 컨테이너 ref (relative + h-[100svh] 권장)
- * - snapPoints: [0~1] 보이는 높이 비율 배열 (예: [0.18, 0.55, 0.9])
- * - defaultSnap: 초기 스냅 인덱스
- * - header: 상단 헤더 JSX
- */
 export default function BottomSheet({
     containerRef,
-    snapPoints = [0.18, 0.55, 0.9],
+
+    snapPoints = [0.08, 0.5, 0.9],
     defaultSnap = 1,
+
+    minVisiblePx = 80,
     header,
     className = '',
     children,
 }) {
-    const [y, setY] = useState(0); // translateY(px)
-    const [ready, setReady] = useState(false); // 초기 높이 계산 완료 여부
+    const [y, setY] = useState(0);
+    const [ready, setReady] = useState(false);
     const [transitionOn, setTransitionOn] = useState(false);
+
     const startY = useRef(0);
     const baseY = useRef(0);
     const snapYsRef = useRef([0]);
 
+    const lastMoveRef = useRef({ t: 0, y: 0 });
+    const vYRef = useRef(0);
+
+    const headerDragRef = useRef(null);
+
     const getH = () => containerRef?.current?.clientHeight || window.innerHeight;
 
+    // visible 높이값을 px로 변환
+    const toVisiblePx = (v, h) => {
+        if (typeof v === 'number') {
+            if (v >= 2) return v; //  px 로 해석
+            if (v >= 0 && v <= 1) return v * h; // 비율
+        }
+        return Math.max(0, 0.18 * h); // fallback 18%
+    };
+
+    // snap → translateY(px) 로 변환
     const computeSnapYs = () => {
         const h = getH();
-        return snapPoints.map((r) => Math.max(0, h - h * r)); // translateY 값
+        return snapPoints.map((sp) => {
+            const vis = toVisiblePx(sp, h);
+            return Math.max(0, h - vis);
+        });
     };
 
-    const snapToNearest = (currentY) => {
-        const snapYs = snapYsRef.current;
-        const target = snapYs.reduce((p, c) => (Math.abs(c - currentY) < Math.abs(p - currentY) ? c : p), snapYs[0]);
-        setY(target);
+    const clampIndex = (i) => {
+        const last = snapYsRef.current.length - 1;
+        return Math.max(0, Math.min(i, last));
     };
 
-    // 초기: 컨테이너 높이가 준비된 뒤 계산 → 준비 끝나면 보이기
+    const nearestIndexByY = (currY) => {
+        const arr = snapYsRef.current;
+        let idx = 0,
+            best = Infinity;
+        for (let i = 0; i < arr.length; i++) {
+            const d = Math.abs(arr[i] - currY);
+            if (d < best) {
+                best = d;
+                idx = i;
+            }
+        }
+        return idx;
+    };
+
+    const goToIndex = (i) => setY(snapYsRef.current[clampIndex(i)]);
+    const snapToNearest = (currY) => goToIndex(nearestIndexByY(currY));
+
+    const onHeaderClick = () => {
+        const idx = nearestIndexByY(y);
+        if (idx > 0) goToIndex(idx - 1);
+        else goToIndex(Math.min(1, snapYsRef.current.length - 1));
+    };
+
+    // 초기 배치
     useLayoutEffect(() => {
-        // 첫 프레임에 container가 아직 없으면 다음 프레임에 재시도
         let raf;
         const init = () => {
             const el = containerRef?.current;
@@ -45,35 +81,39 @@ export default function BottomSheet({
                 raf = requestAnimationFrame(init);
                 return;
             }
-            const snapYs = computeSnapYs();
-            snapYsRef.current = snapYs;
-            const idx = Math.min(defaultSnap, snapYs.length - 1);
-            setY(snapYs[idx]);
-            setReady(true); // 이제 보이기 시작
-            requestAnimationFrame(() => setTransitionOn(true)); // 그 다음부터 전환 켜기
+            snapYsRef.current = computeSnapYs();
+            const idx = Math.min(defaultSnap, snapYsRef.current.length - 2);
+            setY(snapYsRef.current[idx]);
+            setReady(true);
+            requestAnimationFrame(() => setTransitionOn(true));
         };
         init();
         return () => raf && cancelAnimationFrame(raf);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [containerRef, defaultSnap]);
+    }, [containerRef, defaultSnap, snapPoints]);
 
-    // 컨테이너 크기 변화 대응 (회전/주소창 변화 등)
+    // 리사이즈 대응
     useEffect(() => {
         const el = containerRef?.current;
         if (!el) return;
         const ro = new ResizeObserver(() => {
-            const snapYs = computeSnapYs();
-            snapYsRef.current = snapYs;
+            snapYsRef.current = computeSnapYs();
             snapToNearest(y);
         });
         ro.observe(el);
         return () => ro.disconnect();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [y, containerRef]);
+    }, [containerRef, y, snapPoints]);
 
+    // 드래그
     const onStart = (e) => {
-        startY.current = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        if (e.currentTarget !== headerDragRef.current) return;
+        const pointY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        startY.current = pointY;
         baseY.current = y;
+
+        const now = performance.now();
+        lastMoveRef.current = { t: now, y: pointY };
+        vYRef.current = 0;
+
         window.addEventListener('mousemove', onMove, { passive: false });
         window.addEventListener('touchmove', onMove, { passive: false });
         window.addEventListener('mouseup', onEnd);
@@ -84,41 +124,61 @@ export default function BottomSheet({
         if (e.cancelable) e.preventDefault();
         const curr = 'touches' in e ? e.touches[0].clientY : e.clientY;
         const dy = curr - startY.current;
+
         const h = getH();
-        const next = Math.min(Math.max(0, baseY.current + dy), Math.max(0, h - 80)); // 바닥 가까이까지만
+        const maxY = Math.max(0, h - Math.max(0, minVisiblePx)); // ← 하한선을 prop으로
+        const next = Math.min(Math.max(0, baseY.current + dy), maxY);
         setY(next);
+
+        const now = performance.now();
+        const dt = Math.max(1, now - lastMoveRef.current.t);
+        vYRef.current = (curr - lastMoveRef.current.y) / dt;
+        lastMoveRef.current = { t: now, y: curr };
     };
 
     const onEnd = () => {
-        snapToNearest(y);
+        const FLICK_V = 0.6;
+        let idx = nearestIndexByY(y);
+        if (Math.abs(vYRef.current) > FLICK_V) {
+            idx = clampIndex(idx + (vYRef.current < 0 ? -1 : 1));
+        }
+        goToIndex(idx);
+
         window.removeEventListener('mousemove', onMove);
         window.removeEventListener('touchmove', onMove);
         window.removeEventListener('mouseup', onEnd);
         window.removeEventListener('touchend', onEnd);
     };
 
+    const contentMaxH = 'calc(100dvh - 140px)';
+
     return (
         <div
-            className={`absolute w-[393px] bottom-0 z-40 rounded-t-2xl bg-white shadow-[0_-8px_24px_rgba(0,0,0,.15)] ${className}`}
+            className={`absolute bottom-0 z-40 w-[393px] rounded-t-2xl bg-white shadow-[0_-8px_24px_rgba(0,0,0,.15)] ${className}`}
             style={{
                 transform: `translateY(${y}px)`,
                 transition: transitionOn ? 'transform 160ms ease-out' : 'none',
-                visibility: ready ? 'visible' : 'hidden', // 초기 계산 전에는 숨김 (깜빡임 방지)
+                visibility: ready ? 'visible' : 'hidden',
+                willChange: 'transform',
             }}
             aria-hidden={!ready}
         >
-            {/* 드래그 핸들 + 헤더 */}
             <div
+                ref={headerDragRef}
                 onMouseDown={onStart}
                 onTouchStart={onStart}
-                className="cursor-grab active:cursor-grabbing select-none"
+                onClick={onHeaderClick}
+                className="select-none cursor-grab active:cursor-grabbing"
+                role="button"
+                aria-label="시트 드래그/토글"
             >
                 <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-zinc-300" />
                 <div className="px-4 py-3">{header}</div>
             </div>
 
-            {/* 콘텐츠 스크롤 영역 */}
-            <div className="max-h-[70vh] overflow-y-auto px-1 pb-4">{children}</div>
+            <div className="overflow-y-auto px-1 pb-4" style={{ maxHeight: contentMaxH }}>
+                {children}
+            </div>
         </div>
     );
 }

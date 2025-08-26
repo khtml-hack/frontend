@@ -117,19 +117,38 @@ function getLatLng(store) {
     return { lat: plat, lng: plng };
 }
 
+// ====== 하이라이트 유틸 (자동완성 드롭다운에서 매칭 텍스트 강조) ======
+function escapeRegExp(s = '') {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function highlightMatch(text, keyword) {
+    if (!keyword) return escapeHtml(text);
+    const re = new RegExp(escapeRegExp(keyword), 'gi');
+    return escapeHtml(text).replace(re, (m) => `<mark class="bg-yellow-200">${escapeHtml(m)}</mark>`);
+}
+
 export default function PartnerStores() {
     const containerRef = useRef(null);
     const mapElRef = useRef(null);
     const mapRef = useRef(null);
     const markersRef = useRef([]);
     const labelsRef = useRef([]);
+
     const inputRef = useRef(null);
+    const composingRef = useRef(false); // ✅ IME 조합 상태
 
     const [containerReady, setContainerReady] = useState(false);
     const [mapReady, setMapReady] = useState(false);
     const [merchants, setMerchants] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+
+    const [inputValue, setInputValue] = useState(''); // ✅ 제어 인풋
+    const [searchQuery, setSearchQuery] = useState(''); // 실제 검색에 쓰는 값
+
+    // 자동완성 상태
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggest, setShowSuggest] = useState(false);
+
     const [qrOpen, setQrOpen] = useState(false);
 
     // 컨테이너 준비
@@ -237,8 +256,51 @@ export default function PartnerStores() {
         };
 
         loadMerchants();
-    }, [mapReady, searchQuery]); // ✅ region/category 제거
+    }, [mapReady, searchQuery]);
 
+    // ====== 자동완성: 인풋 변경을 디바운스해서 후보 조회 ======
+    useEffect(() => {
+        const kw = inputValue.trim();
+        if (!kw) {
+            setSuggestions([]);
+            return;
+        }
+        const t = setTimeout(async () => {
+            const { merchants } = await fetchMerchantsList(1, 10, kw);
+            const names = merchants.map((m) => m.시설명 || m.name).filter(Boolean);
+            const uniq = Array.from(new Set(names)).slice(0, 8);
+            setSuggestions(uniq);
+            setShowSuggest(true);
+        }, 220);
+        return () => clearTimeout(t);
+    }, [inputValue]);
+
+    // ====== 선택한 이름으로 지도 포커싱(이동 + 말풍선) ======
+    const focusStoreByName = async (name) => {
+        try {
+            const { merchants } = await fetchMerchantsList(1, 5, name);
+            if (!merchants || merchants.length === 0) return false;
+
+            const candidate = merchants.find((m) => (m.시설명 || m.name) === name) || merchants[0];
+
+            const ll = getLatLng(candidate);
+            if (!ll) return false;
+
+            const kakao = window.kakao;
+            const map = mapRef.current;
+            if (!kakao || !map) return false;
+
+            const pos = new kakao.maps.LatLng(ll.lat, ll.lng);
+            map.panTo(pos);
+            if (map.getLevel() > 4) map.setLevel(4);
+
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    // ====== 핸들러 ======
     const flyTo = (lat, lng) => {
         const kakao = window.kakao;
         const map = mapRef.current;
@@ -246,15 +308,39 @@ export default function PartnerStores() {
         map.panTo(new kakao.maps.LatLng(lat, lng));
     };
 
-    const runSearch = () => {
-        const v = inputRef.current?.value ?? '';
-        setSearchQuery(v.trim());
+    const runSearch = async () => {
+        const kw = inputValue.trim();
+        if (!kw) return;
+        // 먼저 지도 포커싱 시도
+        await focusStoreByName(kw);
+        // 리스트 갱신
+        setSearchQuery(kw);
+        setShowSuggest(false);
     };
-    const handleKeyDown = (e) => {
+
+    const onKeyDown = (e) => {
+        if (e.nativeEvent.isComposing) return; // ✅ 한글 조합 중 Enter 무시
         if (e.key === 'Enter') {
+            e.preventDefault();
             runSearch();
             e.currentTarget.blur();
         }
+    };
+
+    const onChange = (e) => setInputValue(e.target.value);
+    const onCompositionStart = () => {};
+    const onCompositionEnd = (e) => {
+        // 조합 끝나면 value 동기화 (제어 컴포넌트)
+        setInputValue(e.currentTarget.value);
+    };
+
+    const pickSuggestion = async (name) => {
+        setInputValue(name);
+        setShowSuggest(false);
+        // 지도 이동 + 강조
+        await focusStoreByName(name);
+        // 하단 리스트 갱신
+        setSearchQuery(name);
     };
 
     return (
@@ -270,8 +356,17 @@ export default function PartnerStores() {
                             ref={inputRef}
                             className="w-full rounded-xl bg-white/95 px-4 py-3 pr-10 shadow placeholder:text-zinc-400"
                             placeholder="매장명으로 찾기"
-                            onKeyDown={handleKeyDown}
-                            defaultValue={searchQuery}
+                            value={inputValue}
+                            onChange={onChange}
+                            onKeyDown={onKeyDown}
+                            onCompositionStart={onCompositionStart}
+                            onCompositionEnd={onCompositionEnd}
+                            onFocus={() => {
+                                if (suggestions.length) setShowSuggest(true);
+                            }}
+                            onBlur={() => {
+                                setTimeout(() => setShowSuggest(false), 120);
+                            }}
                         />
                         <button
                             type="button"
@@ -282,6 +377,22 @@ export default function PartnerStores() {
                         >
                             <img src={SearchIcon} alt="" className="h-5 w-5 opacity-70" />
                         </button>
+
+                        {/* 자동완성 드롭다운 */}
+                        {showSuggest && suggestions.length > 0 && (
+                            <ul className="absolute left-0 right-0 mt-1 rounded-xl bg-white/95 shadow-lg ring-1 ring-black/5 max-h-60 overflow-auto z-20">
+                                {suggestions.map((s, i) => (
+                                    <li key={`${s}-${i}`} className="border-b last:border-b-0 border-zinc-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => pickSuggestion(s)}
+                                            className="w-full text-left px-3 py-2 hover:bg-zinc-100"
+                                            dangerouslySetInnerHTML={{ __html: highlightMatch(s, inputValue.trim()) }}
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
 
                     <button
@@ -301,41 +412,45 @@ export default function PartnerStores() {
                             snapPoints={[0.18, 0.55, 1]}
                             defaultSnap={1}
                             header={
-                                <div className="flex items-center justify-between ">
+                                <div className="flex items-center justify-between px-3 py-2">
                                     <span className="text-base font-semibold">가까운 매장</span>
                                 </div>
                             }
                         >
-                            <div className="p-4 -mt-5">
+                            <div className="px-3 pt-1 pb-2 -mt-1">
                                 {loading ? (
-                                    <div className="text-center py-8 text-zinc-500">로딩 중...</div>
+                                    <div className="text-center py-6 text-zinc-500">로딩 중...</div>
                                 ) : merchants.length === 0 ? (
-                                    <div className="text-center py-8 text-zinc-500">검색 결과가 없습니다.</div>
+                                    <div className="text-center py-6 text-zinc-500">검색 결과가 없습니다.</div>
                                 ) : (
-                                    <ul className="divide-y">
+                                    <ul className="divide-y divide-zinc-100">
                                         {merchants.map((store, i) => {
                                             const name = store.시설명 || store.name;
                                             const cate = store.카테고리 || store.category;
                                             const addr = store.소재지 || store.address;
                                             const ll = getLatLng(store);
+
                                             return (
-                                                <li key={store.id || i} className="px-4 py-3">
+                                                <li key={store.id || i} className="px-3 py-2">
                                                     <button
                                                         onClick={() => {
                                                             if (ll) flyTo(ll.lat, ll.lng);
                                                         }}
                                                         className="w-full text-left"
                                                     >
-                                                        <div className=" flex items-center justify-between">
+                                                        <div className="flex items-center justify-between">
                                                             <div>
-                                                                <div className="flex flex-col items-start gap-1">
+                                                                <div className="flex flex-col items-start gap-0.5">
                                                                     <span className="text-[11px] rounded-md bg-zinc-100 px-2 py-0.5">
                                                                         {cate}
                                                                     </span>
-                                                                    <span className="font-semibold">{name}</span>
+                                                                    <span className="font-semibold leading-tight">
+                                                                        {name}
+                                                                    </span>
                                                                 </div>
-
-                                                                <div className="mt-1 text-xs text-zinc-500">{addr}</div>
+                                                                <div className="mt-0.5 text-xs text-zinc-500">
+                                                                    {addr}
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </button>
