@@ -93,51 +93,33 @@ const Signup = () => {
     return (
         <div className="mobile-frame">
             {/* Content */}
-            <div className="flex flex-col h-full px-8">
+            <div className="flex flex-col h-full px-8 pt-20">
                 <div className="flex-1 flex flex-col justify-center">
-                    <h1 className="text-2xl font-medium text-center mb-12 text-black">회원가입</h1>
+                    <h1 className="text-2xl font-medium text-left mb-8 text-black">회원가입</h1>
 
-                    <div className="space-y-4 mb-8">
+                    <div className="space-y-4 mb-12">
                         {/* 이메일 필드 */}
                         <div>
                             <div
-                                className={`bg-white border rounded-2xl p-4 ${
+                                className={`bg-white border rounded-2xl px-5 py-4 ${
                                     errors.email ? 'border-red-400' : 'border-gray-300'
                                 }`}
                             >
                                 <input
                                     type="email"
-                                    placeholder="이메일"
+                                    placeholder="이메일 "
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base outline-none"
                                 />
                             </div>
                             {errors.email && <div className="text-red-500 text-xs mt-1 px-2">{errors.email}</div>}
                         </div>
 
-                        {/* 사용자명 필드 */}
-                        <div>
-                            <div
-                                className={`bg-white border rounded-2xl p-4 ${
-                                    errors.username ? 'border-red-400' : 'border-gray-300'
-                                }`}
-                            >
-                                <input
-                                    type="text"
-                                    placeholder="사용자명 (선택)"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
-                                />
-                            </div>
-                            {errors.username && <div className="text-red-500 text-xs mt-1 px-2">{errors.username}</div>}
-                        </div>
-
                         {/* 비밀번호 필드 */}
                         <div>
                             <div
-                                className={`bg-white border rounded-2xl p-4 ${
+                                className={`bg-white border rounded-2xl px-5 py-4 ${
                                     errors.password ? 'border-red-400' : 'border-gray-300'
                                 }`}
                             >
@@ -146,7 +128,7 @@ const Signup = () => {
                                     placeholder="비밀번호"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base outline-none"
                                 />
                             </div>
                             {errors.password && <div className="text-red-500 text-xs mt-1 px-2">{errors.password}</div>}
@@ -155,7 +137,7 @@ const Signup = () => {
                         {/* 비밀번호 확인 필드 */}
                         <div>
                             <div
-                                className={`bg-white border rounded-2xl p-4 ${
+                                className={`bg-white border rounded-2xl px-5 py-4 ${
                                     errors.password_confirm ||
                                     (confirmPassword && password && password !== confirmPassword)
                                         ? 'border-red-400'
@@ -167,7 +149,7 @@ const Signup = () => {
                                     placeholder="비밀번호 확인"
                                     value={confirmPassword}
                                     onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-lg outline-none"
+                                    className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base outline-none"
                                 />
                             </div>
                             {errors.password_confirm && (
@@ -190,21 +172,24 @@ const Signup = () => {
                         )}
                     </div>
 
-                    <button onClick={handleSignup} disabled={!isFormValid} className="btn-peak w-full mb-6">
+                    <button
+                        onClick={handleSignup}
+                        disabled={!isFormValid}
+                        className={`w-full py-4 rounded-2xl text-xl font-medium mb-12 ${
+                            isFormValid ? 'bg-gray-700 text-white' : 'bg-gray-300 text-gray-200'
+                        }`}
+                    >
                         회원가입
                     </button>
 
-                    <button
-                        onClick={() => navigate('/login')}
-                        className="text-center text-gray-500 text-base underline"
-                    >
+                    <button onClick={() => navigate('/login')} className="text-center text-gray-500 text-sm">
                         계정이 있으신가요?
                     </button>
                 </div>
 
                 {/* Footer */}
                 <div className="pb-8 text-center">
-                    <p className="text-lg font-extrabold peak-green">Peak down</p>
+                    <p className="text-lg font-extrabold peak-green">Peak_down</p>
                 </div>
             </div>
         </div>

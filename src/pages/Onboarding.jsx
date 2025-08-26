@@ -264,7 +264,7 @@ const Onboarding = () => {
     };
 
     const renderStep1 = () => (
-        <div className="flex flex-col items-center justify-center h-full px-8">
+        <div className="flex flex-col items-center justify-center h-full px-8 pt-20">
             <div className="text-6xl mb-8">👋</div>
             <h1 className="text-2xl font-medium text-center mb-8 text-black leading-tight">
                 반가워요!
@@ -292,12 +292,12 @@ const Onboarding = () => {
         <div className="flex flex-col h-full px-8 relative">
             {/* Main Content */}
             <div
-                className={`flex-1 flex flex-col items-center justify-center transition-all duration-300 ${
+                className={`flex-1 flex flex-col items-center justify-center transition-all duration-300 pt-20 ${
                     showLocationModal ? 'blur-sm' : ''
                 }`}
             >
                 <h1 className="text-2xl font-medium text-center mb-8 text-black">위치 정보 접근 권한 동의</h1>
-                <div className="bg-white border rounded-xl p-6 mb-8 w-full" style={{ borderColor: '#c8c8c8' }}>
+                <div className="bg-white border rounded-xl p-6 mb-16 w-full" style={{ borderColor: '#c8c8c8' }}>
                     <p
                         className="text-base"
                         style={{
@@ -425,58 +425,94 @@ const Onboarding = () => {
     );
 
     const renderStep3 = () => (
-        <div className="flex flex-col items-center justify-center h-full px-8">
-            <h1 className="text-2xl font-medium text-center mb-8 text-black leading-tight">
+        <div className="flex flex-col items-center justify-center h-full px-8 pt-20">
+            <h1 className="text-2xl font-medium text-center mb-12 text-black leading-tight">
                 매일 다니는 경로를 등록하고
                 <br />
                 간편하게 시간 추천을 받아보세요!
             </h1>
-            <div className="flex gap-4 mb-12">
+            <div className="flex gap-2 mb-20 w-full">
                 <button
                     onClick={() => handleRouteToggle('집')}
-                    className={`rounded-2xl p-6 flex-1 text-center transition-all duration-200 ${
+                    className={`rounded-2xl py-6 px-4 flex-1 text-center transition-all duration-200 ${
                         addresses.집 !== null ? 'bg-green-500 text-white' : 'bg-gray-800 text-white hover:bg-gray-700'
                     }`}
                 >
                     <div className="text-2xl mb-2">🏡</div>
-                    <div className="text-base">집</div>
-                    <div className="text-sm mt-2">{addresses.집 !== null ? '등록 완료!' : '+ 주소 검색'}</div>
+                    <div className="text-sm">집</div>
+                    <div className="text-xs mt-2 leading-tight">
+                        {addresses.집 !== null ? '등록 완료!' : '+ 주소 검색'}
+                    </div>
                 </button>
                 <button
                     onClick={() => handleRouteToggle('학교')}
-                    className={`rounded-2xl p-6 flex-1 text-center transition-all duration-200 ${
+                    className={`rounded-2xl py-6 px-4 flex-1 text-center transition-all duration-200 ${
                         addresses.학교 !== null ? 'bg-green-500 text-white' : 'bg-gray-800 text-white hover:bg-gray-700'
                     }`}
                 >
                     <div className="text-2xl mb-2">🏫</div>
-                    <div className="text-base">학교</div>
-                    <div className="text-sm mt-2">{addresses.학교 !== null ? '등록 완료!' : '+ 주소 검색'}</div>
+                    <div className="text-sm">학교</div>
+                    <div className="text-xs mt-2 leading-tight">
+                        {addresses.학교 !== null ? '등록 완료!' : '+ 주소 검색'}
+                    </div>
                 </button>
                 <button
                     onClick={() => handleRouteToggle('직장')}
-                    className={`rounded-2xl p-6 flex-1 text-center transition-all duration-200 ${
+                    className={`rounded-2xl py-6 px-4 flex-1 text-center transition-all duration-200 ${
                         addresses.직장 !== null ? 'bg-green-500 text-white' : 'bg-gray-800 text-white hover:bg-gray-700'
                     }`}
                 >
                     <div className="text-2xl mb-2">🏢</div>
-                    <div className="text-base">직장</div>
-                    <div className="text-sm mt-2">{addresses.직장 !== null ? '등록 완료!' : '+ 주소 검색'}</div>
+                    <div className="text-sm">직장</div>
+                    <div className="text-xs mt-2 leading-tight">
+                        {addresses.직장 !== null ? '등록 완료!' : '+ 주소 검색'}
+                    </div>
                 </button>
             </div>
-            <button
-                onClick={handleNextStep}
-                disabled={selectedRoutes.length === 0}
-                className={`w-full py-4 rounded-2xl text-xl font-medium mb-4 transition-all duration-200 ${
-                    selectedRoutes.length > 0
-                        ? 'bg-green-500 text-white hover:bg-green-600'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-            >
-                다음 ({selectedRoutes.length}개 선택됨)
-            </button>
-            <button onClick={handleNextStep} className="text-gray-500 text-lg hover:text-gray-700">
-                건너뛰기 &gt;
-            </button>
+
+            {/* Bottom Navigation */}
+            <div className="w-full">
+                {/* Previous and Skip buttons */}
+                <div className="flex justify-between items-center mb-4">
+                    <button
+                        onClick={handlePrevStep}
+                        className="text-gray-500 text-lg"
+                        style={{
+                            color: '#7d7d7d',
+                            fontFamily: 'Pretendard',
+                            fontWeight: 400,
+                            fontSize: '17px',
+                        }}
+                    >
+                        &lt; 이전단계
+                    </button>
+                    <button
+                        onClick={handleNextStep}
+                        className="text-gray-500 text-lg"
+                        style={{
+                            color: '#7d7d7d',
+                            fontFamily: 'Pretendard',
+                            fontWeight: 400,
+                            fontSize: '17px',
+                        }}
+                    >
+                        건너뛰기 &gt;
+                    </button>
+                </div>
+
+                {/* Next button */}
+                <button
+                    onClick={handleNextStep}
+                    disabled={selectedRoutes.length === 0}
+                    className={`w-full py-4 rounded-2xl text-xl font-medium transition-all duration-200 ${
+                        selectedRoutes.length > 0
+                            ? 'bg-gray-800 text-white'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    }`}
+                >
+                    다음
+                </button>
+            </div>
 
             {/* Address Registration Modal */}
             {showAddressModal && (
@@ -602,16 +638,23 @@ const Onboarding = () => {
     );
 
     const renderStep4 = () => (
-        <div className="flex flex-col items-center justify-center h-full px-8">
-            <h1 className="text-2xl font-medium text-center mb-6 text-black">모든 준비가 끝났어요!</h1>
-            <p className="text-gray-600 text-base text-center leading-relaxed mb-12">
+        <div className="flex flex-col items-center justify-center h-full px-8 pt-20">
+            <h1 className="text-2xl font-medium text-center mb-8 text-black">모든 준비가 끝났어요!</h1>
+            <p
+                className="text-gray-500 text-base text-center leading-relaxed mb-28"
+                style={{ fontSize: '15px', lineHeight: '24px' }}
+            >
                 {nickname}님을 위한 맞춤 설정이 완료되었습니다.
                 <br />
-                이제 Peak-down과 함께 막히는 길 위에서 낭비되던
+                Peak-down과 함께 막히는 길 위,
                 <br />
-                당신의 소중한 시간을 되찾아 보세요.
+                잃었던 시간을 되찾아보세요.
             </p>
-            <button onClick={() => navigate('/login')} className="btn-peak w-full">
+            <button
+                onClick={() => navigate('/login')}
+                className="w-full py-4 rounded-2xl text-xl font-medium"
+                style={{ backgroundColor: '#363636', color: '#ffffff' }}
+            >
                 Peak-down 시작하기
             </button>
         </div>
@@ -637,8 +680,8 @@ const Onboarding = () => {
                 {step === 3 && renderStep3()}
                 {step === 4 && renderStep4()}
 
-                {/* Previous Step Button - Only show for steps other than 2 */}
-                {step > 1 && step !== 2 && (
+                {/* Previous Step Button - Only show for steps other than 2, 3, and 4 */}
+                {step > 1 && step !== 2 && step !== 3 && step !== 4 && (
                     <button
                         onClick={handlePrevStep}
                         className="absolute left-8 text-lg"
