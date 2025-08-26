@@ -6,30 +6,24 @@ export default function QrModal({
     onClose,
     src = '/qr.png',
     alt = '내 QR코드',
-    title = '내 QR코드',
-    closeText = '닫기',
+    title = '매장에서 QR로 결제하기',
     allowBackdropClose = true,
-    escToClose = true,
+    closeIconSrc = '/X.png',
     className = '',
     backdropClassName = '',
 }) {
     const labelId = typeof useId === 'function' ? useId() : 'qr-modal-title';
     const closeBtnRef = useRef(null);
 
-    // ESC로 닫기 + body 스크롤 잠금 + 버튼 포커스
+    // body 스크롤 잠금 + X 버튼 포커스
     useEffect(() => {
         if (!open) return;
-        const onKey = (e) => escToClose && e.key === 'Escape' && onClose?.();
-        document.addEventListener('keydown', onKey);
         document.body.classList.add('overflow-hidden');
-        // 약간의 지연 후 포커스
         setTimeout(() => closeBtnRef.current?.focus(), 0);
-
         return () => {
-            document.removeEventListener('keydown', onKey);
             document.body.classList.remove('overflow-hidden');
         };
-    }, [open, escToClose, onClose]);
+    }, [open]);
 
     if (!open) return null;
 
@@ -43,20 +37,25 @@ export default function QrModal({
         >
             <div className={`absolute inset-0 bg-black/60 backdrop-blur-sm ${backdropClassName}`} />
             <div
-                className={`relative z-10 w-full max-w-xs rounded-2xl bg-white p-4 shadow-lg ${className}`}
+                className={`relative z-10 w-[309px] h-[309px] rounded-2xl bg-[#363636] p-4 shadow-lg ${className}`}
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 id={labelId} className="sr-only">
-                    {title}
-                </h2>
-                <img src={src} alt={alt} className="w-full h-auto rounded-md" />
+                {/* 상단 우측 X 아이콘 */}
                 <button
                     ref={closeBtnRef}
+                    type="button"
                     onClick={onClose}
-                    className="mt-4 w-full rounded-xl bg-green-600 py-2 text-white active:scale-[.98] focus:outline-none focus:ring-2 focus:ring-green-600/40"
+                    aria-label="닫기"
+                    className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-white/10 "
                 >
-                    {closeText}
+                    <img src={closeIconSrc} alt="" className="w-[14px] h-[14px]" />
                 </button>
+
+                <h2 id={labelId} className="text-white text-[20px] text-center mt-5 mb-4 px-auto">
+                    {title}
+                </h2>
+
+                <img src={src} alt={alt} className="w-[170px] h-[170px] mx-auto rounded-md" />
             </div>
         </div>,
         document.body
