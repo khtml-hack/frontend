@@ -3,7 +3,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 export default function BottomSheet({
     containerRef,
 
-    snapPoints = [0.08, 0.5, 0.9],
+    snapPoints = [0.08, 0.5, 0.8],
     defaultSnap = 1,
 
     minVisiblePx = 80,
