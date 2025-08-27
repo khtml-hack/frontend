@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { patchNickname } from '../api/nicknameApi';
 import { logoutUser } from '../api/userApi';
+import BottomTap from '../components/BottomTap';
 
 export default function MyPage() {
-    const { pathname } = useLocation();
     const navigate = useNavigate();
-    const hideTabOn = ['/login'];
 
     // QR 모달
     const [qrOpen, setQrOpen] = useState(false);
@@ -94,10 +93,7 @@ export default function MyPage() {
 
     return (
         <div className="mobile-frame">
-            <div
-                className="mx-auto w-full max-w-[420px] min-h-[100svh] flex flex-col bg-white text-black"
-                style={{ paddingBottom: 'max(env(safe-area-inset-bottom),12px)' }}
-            >
+            <div className="mx-auto w-full max-w-[420px] min-h-[100svh] flex flex-col bg-white text-black relative">
                 {/* 상단 카드(간단) */}
                 <header className="p-7">
                     <h1 className="text-[clamp(22px,5vw,28px)] font-extrabold text-green-500">Peak_down</h1>
@@ -176,38 +172,6 @@ export default function MyPage() {
                     </div>
                 </main>
 
-                {/* 하단 탭 */}
-                {!hideTabOn.includes(pathname) && (
-                    <nav className="sticky bottom-0 border-t bg-white">
-                        <ul className="flex justify-around py-3 text-[18px]">
-                            <li>
-                                <NavLink
-                                    to="/stores"
-                                    className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}
-                                >
-                                    결제매장
-                                </NavLink>
-                            </li>
-                            <li>
-                                <NavLink
-                                    to="/home"
-                                    className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}
-                                >
-                                    홈
-                                </NavLink>
-                            </li>
-                            <li>
-                                <NavLink
-                                    to="/mypage"
-                                    className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}
-                                >
-                                    마이페이지
-                                </NavLink>
-                            </li>
-                        </ul>
-                    </nav>
-                )}
-
                 {/* 닉네임 변경 모달 */}
                 {editOpen && (
                     <div
@@ -268,6 +232,9 @@ export default function MyPage() {
                     </div>
                 )}
             </div>
+
+            {/* 하단 탭 */}
+            <BottomTap />
         </div>
     );
 }
