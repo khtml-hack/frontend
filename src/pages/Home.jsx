@@ -414,10 +414,16 @@ const Home = () => {
                                 <span className="text-xl font-extrabold">2,500원</span>
                             </div>
                             <div className="mt-3 flex gap-2">
-                                <button className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm">
+                                <button
+                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                    onClick={() => navigate('/point-history')}
+                                >
                                     적립/사용내역
                                 </button>
-                                <button className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm">
+                                <button
+                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                    onClick={() => navigate('/stores')}
+                                >
                                     사용하러 가기
                                 </button>
                             </div>

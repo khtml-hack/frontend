@@ -1,9 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { NavLink } from 'react-router-dom';
 import BottomSheet from '../components/BottomSheet';
 import BottomTap from '../components/BottomTap';
 import QrModal from '../components/QrModal';
 import SearchIcon from '../assets/Search.png';
+import QRIcon from '../assets/Union.png';
 
 // 카카오 SDK 동적 로더
 function loadKakaoSdk() {
@@ -19,7 +19,6 @@ function loadKakaoSdk() {
             wait();
             return;
         }
-
         const script = document.createElement('script');
         script.id = 'kakao-sdk';
         script.async = true;
@@ -33,149 +32,134 @@ function loadKakaoSdk() {
     });
 }
 
-// 🔥 API 호출 함수들
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://peakdown.site'; // 환경변수 또는 기본값
+// ====== 라벨 스타일 & 유틸 ======
+const LABEL_STYLE_ID = 'store-label-style';
+function ensureStoreLabelStyle() {
+    if (document.getElementById(LABEL_STYLE_ID)) return;
+    const style = document.createElement('style');
+    style.id = LABEL_STYLE_ID;
+    style.textContent = `
+    .store-label{
+      position: relative;
+      left: 0; top: 0;
+      transform: translate(-50%, -34px);
+      white-space: nowrap;
+      font-size: 12px; line-height: 1;
+      color: #1f2937;
+      background: #fff;
+      border: 1px solid rgba(0,0,0,.15);
+      padding: 4px 6px;
+      border-radius: 10px;
+      box-shadow: 0 1px 2px rgba(0,0,0,.08);
+      pointer-events: none;
+    }
+  `;
+    document.head.appendChild(style);
+}
+function escapeHtml(s = '') {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+function labelContent(name) {
+    return `<div class="store-label">${escapeHtml(name)}</div>`;
+}
 
-// 지도용 마커 데이터 가져오기
-async function fetchMapMarkers(region = '', category = '', limit = 500) {
+// API
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://peakdown.site').replace(/\/$/, '');
+
+// 지도용 마커 데이터 (limit만 사용)
+async function fetchMapMarkers(limit = 500) {
     try {
         const params = new URLSearchParams();
-        if (region) params.append('region', region);
-        if (category) params.append('category', category);
-        if (limit) params.append('limit', limit.toString());
-
-        const response = await fetch(`${API_BASE_URL}/api/merchants/map/?${params}`);
-        if (!response.ok) throw new Error('Failed to fetch markers');
-
-        const data = await response.json();
+        if (limit) params.append('limit', String(limit));
+        const res = await fetch(`${API_BASE_URL}/api/merchants/map/?${params}`);
+        if (!res.ok) throw new Error('Failed to fetch markers');
+        const data = await res.json();
         return data.markers || [];
-    } catch (error) {
-        console.error('Error fetching markers:', error);
+    } catch (e) {
+        console.error('Error fetching markers:', e);
         return [];
     }
 }
 
-// 상점 목록 데이터 가져오기 (바텀시트용)
-async function fetchMerchantsList(page = 1, pageSize = 20, region = '', category = '', search = '') {
+// 상점 목록 (검색만 사용)
+async function fetchMerchantsList(page = 1, pageSize = 20, search = '') {
     try {
         const params = new URLSearchParams({
-            page: page.toString(),
-            page_size: pageSize.toString(),
+            page: String(page),
+            page_size: String(pageSize),
         });
-
-        if (region) params.append('region', region);
-        if (category) params.append('category', category);
         if (search) params.append('search', search);
-
-        const response = await fetch(`${API_BASE_URL}/api/merchants/list/?${params}`);
-        if (!response.ok) throw new Error('Failed to fetch merchants');
-
-        const data = await response.json();
-        return {
-            merchants: data.merchants || [],
-            pagination: data.pagination || {},
-        };
-    } catch (error) {
-        console.error('Error fetching merchants:', error);
+        const res = await fetch(`${API_BASE_URL}/api/merchants/list/?${params}`);
+        if (!res.ok) throw new Error('Failed to fetch merchants');
+        const data = await res.json();
+        return { merchants: data.merchants || [], pagination: data.pagination || {} };
+    } catch (e) {
+        console.error('Error fetching merchants:', e);
         return { merchants: [], pagination: {} };
     }
 }
 
-// 필터 옵션 가져오기
-async function fetchFilterOptions() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/merchants/filters/`);
-        if (!response.ok) throw new Error('Failed to fetch filters');
+const toNum = (v) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+};
+function getLatLng(store) {
+    const lat = store.latitude ?? store.lat ?? store.y ?? store.위도 ?? store.Latitude ?? null;
+    const lng = store.longitude ?? store.lng ?? store.x ?? store.경도 ?? store.Longitude ?? null;
+    const plat = toNum(lat);
+    const plng = toNum(lng);
+    if (plat == null || plng == null) return null;
+    return { lat: plat, lng: plng };
+}
 
-        const data = await response.json();
-        return {
-            regions: data.regions || [],
-            categories: data.categories || [],
-        };
-    } catch (error) {
-        console.error('Error fetching filters:', error);
-        return { regions: [], categories: [] };
-    }
+// ====== 하이라이트 유틸 (자동완성 드롭다운에서 매칭 텍스트 강조) ======
+function escapeRegExp(s = '') {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function highlightMatch(text, keyword) {
+    if (!keyword) return escapeHtml(text);
+    const re = new RegExp(escapeRegExp(keyword), 'gi');
+    return escapeHtml(text).replace(re, (m) => `<mark class="bg-yellow-200">${escapeHtml(m)}</mark>`);
 }
 
 export default function PartnerStores() {
     const containerRef = useRef(null);
     const mapElRef = useRef(null);
     const mapRef = useRef(null);
-    const markersRef = useRef([]); // 🔥 마커들 관리
-    const inputRef = useRef(null); // 🔍 검색 인풋 ref
+    const markersRef = useRef([]);
+    const labelsRef = useRef([]);
+
+    const inputRef = useRef(null);
+    const composingRef = useRef(false); // ✅ IME 조합 상태
 
     const [containerReady, setContainerReady] = useState(false);
-    const [merchants, setMerchants] = useState([]); // 🔥 실제 상점 데이터
+    const [mapReady, setMapReady] = useState(false);
+    const [merchants, setMerchants] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedRegion, setSelectedRegion] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
-    const [filterOptions, setFilterOptions] = useState({ regions: [], categories: [] });
+
+    const [inputValue, setInputValue] = useState(''); // ✅ 제어 인풋
+    const [searchQuery, setSearchQuery] = useState(''); // 실제 검색에 쓰는 값
+
+    // 자동완성 상태
+    const [suggestions, setSuggestions] = useState([]);
+    const [showSuggest, setShowSuggest] = useState(false);
+
     const [qrOpen, setQrOpen] = useState(false);
 
-    // 컨테이너 높이 준비 체크
+    // 컨테이너 준비
     useEffect(() => {
         const check = () => {
             const el = containerRef.current;
-            if (el && el.clientHeight > 0) {
-                setContainerReady(true);
-            } else {
-                requestAnimationFrame(check);
-            }
+            if (el && el.clientHeight > 0) setContainerReady(true);
+            else requestAnimationFrame(check);
         };
         check();
     }, []);
-
-    // 🔥 필터 옵션 로드
-    useEffect(() => {
-        fetchFilterOptions().then(setFilterOptions);
-    }, []);
-
-    // 🔥 상점 데이터 로드
-    useEffect(() => {
-        const loadMerchants = async () => {
-            setLoading(true);
-            try {
-                // 바텀시트용 리스트 데이터
-                const listData = await fetchMerchantsList(1, 50, selectedRegion, selectedCategory, searchQuery);
-                setMerchants(listData.merchants);
-
-                // 지도용 마커 데이터 (더 많이)
-                const markerData = await fetchMapMarkers(selectedRegion, selectedCategory, 200);
-
-                // 기존 마커들 제거
-                markersRef.current.forEach((marker) => marker.setMap(null));
-                markersRef.current = [];
-
-                // 새 마커들 추가
-                if (window.kakao && mapRef.current) {
-                    markerData.forEach((store) => {
-                        if (store.latitude && store.longitude) {
-                            const marker = new window.kakao.maps.Marker({
-                                map: mapRef.current,
-                                position: new window.kakao.maps.LatLng(store.latitude, store.longitude),
-                                title: store.시설명 || store.name,
-                            });
-
-                            // 🔥 마커 클릭 이벤트 (선택사항)
-                            window.kakao.maps.event.addListener(marker, 'click', () => {
-                                flyTo(store.latitude, store.longitude);
-                            });
-
-                            markersRef.current.push(marker);
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error('Error loading merchants:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadMerchants();
-    }, [selectedRegion, selectedCategory, searchQuery]);
 
     // 지도 초기화
     useEffect(() => {
@@ -184,76 +168,205 @@ export default function PartnerStores() {
         loadKakaoSdk()
             .then((kakao) => {
                 kakao.maps.load(() => {
-                    // 기본 중심: 서울 시청
                     const center = new kakao.maps.LatLng(37.5665, 126.978);
-                    const map = new kakao.maps.Map(mapElRef.current, {
-                        center,
-                        level: 5,
-                    });
+                    const map = new kakao.maps.Map(mapElRef.current, { center, level: 5 });
                     mapRef.current = map;
 
-                    // 내 위치로 센터 이동
                     if (navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(
                             (pos) => {
                                 const ll = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
                                 map.setCenter(ll);
                             },
-                            () => {} // 거부/오류는 무시
+                            () => {}
                         );
                     }
+                    setMapReady(true);
                 });
             })
-            .catch((e) => {
-                console.error('Kakao SDK load error:', e);
-            });
+            .catch((e) => console.error('Kakao SDK load error:', e));
 
         return () => {
-            // 마커들 정리
-            markersRef.current.forEach((marker) => marker.setMap(null));
+            markersRef.current.forEach((m) => m.setMap(null));
+            labelsRef.current.forEach((o) => o.setMap(null));
             markersRef.current = [];
+            labelsRef.current = [];
             mapRef.current = null;
+            setMapReady(false);
         };
     }, [containerReady]);
 
-    // 리스트에서 항목 클릭 시 지도 중심 이동
+    // 데이터 로드 + 마커 & 라벨 (검색만 의존)
+    useEffect(() => {
+        if (!mapReady) return;
+
+        const loadMerchants = async () => {
+            setLoading(true);
+            try {
+                // 리스트
+                const listData = await fetchMerchantsList(1, 50, searchQuery);
+                setMerchants(listData.merchants);
+
+                // 마커
+                const markerData = await fetchMapMarkers(200);
+
+                // 초기화
+                markersRef.current.forEach((m) => m.setMap(null));
+                labelsRef.current.forEach((o) => o.setMap(null));
+                markersRef.current = [];
+                labelsRef.current = [];
+
+                const kakao = window.kakao;
+                const map = mapRef.current;
+                if (!kakao || !map) return;
+
+                ensureStoreLabelStyle();
+
+                markerData.forEach((store) => {
+                    const ll = getLatLng(store);
+                    if (!ll) return;
+                    const name = store.시설명 || store.name || '';
+
+                    const marker = new kakao.maps.Marker({
+                        map,
+                        position: new kakao.maps.LatLng(ll.lat, ll.lng),
+                        title: name,
+                    });
+                    markersRef.current.push(marker);
+
+                    const overlay = new kakao.maps.CustomOverlay({
+                        position: new kakao.maps.LatLng(ll.lat, ll.lng),
+                        content: labelContent(name),
+                        xAnchor: 0.5,
+                        yAnchor: 1.0,
+                        zIndex: 999,
+                    });
+                    overlay.setMap(map);
+                    labelsRef.current.push(overlay);
+
+                    kakao.maps.event.addListener(marker, 'click', () => {
+                        map.panTo(new kakao.maps.LatLng(ll.lat, ll.lng));
+                    });
+                });
+            } catch (e) {
+                console.error('Error loading merchants:', e);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadMerchants();
+    }, [mapReady, searchQuery]);
+
+    // ====== 자동완성: 인풋 변경을 디바운스해서 후보 조회 ======
+    useEffect(() => {
+        const kw = inputValue.trim();
+        if (!kw) {
+            setSuggestions([]);
+            return;
+        }
+        const t = setTimeout(async () => {
+            const { merchants } = await fetchMerchantsList(1, 10, kw);
+            const names = merchants.map((m) => m.시설명 || m.name).filter(Boolean);
+            const uniq = Array.from(new Set(names)).slice(0, 8);
+            setSuggestions(uniq);
+            setShowSuggest(true);
+        }, 220);
+        return () => clearTimeout(t);
+    }, [inputValue]);
+
+    // ====== 선택한 이름으로 지도 포커싱(이동 + 말풍선) ======
+    const focusStoreByName = async (name) => {
+        try {
+            const { merchants } = await fetchMerchantsList(1, 5, name);
+            if (!merchants || merchants.length === 0) return false;
+
+            const candidate = merchants.find((m) => (m.시설명 || m.name) === name) || merchants[0];
+
+            const ll = getLatLng(candidate);
+            if (!ll) return false;
+
+            const kakao = window.kakao;
+            const map = mapRef.current;
+            if (!kakao || !map) return false;
+
+            const pos = new kakao.maps.LatLng(ll.lat, ll.lng);
+            map.panTo(pos);
+            if (map.getLevel() > 4) map.setLevel(4);
+
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
+    // ====== 핸들러 ======
     const flyTo = (lat, lng) => {
         const kakao = window.kakao;
         const map = mapRef.current;
         if (!kakao || !map) return;
-        const pos = new kakao.maps.LatLng(lat, lng);
-        map.panTo(pos);
+        map.panTo(new kakao.maps.LatLng(lat, lng));
     };
 
-    // 검색 실행 함수 (아이콘 클릭/엔터)
-    const runSearch = () => {
-        const v = inputRef.current?.value ?? '';
-        setSearchQuery(v.trim());
+    const runSearch = async () => {
+        const kw = inputValue.trim();
+        if (!kw) return;
+        // 먼저 지도 포커싱 시도
+        await focusStoreByName(kw);
+        // 리스트 갱신
+        setSearchQuery(kw);
+        setShowSuggest(false);
     };
 
-    const handleKeyDown = (e) => {
+    const onKeyDown = (e) => {
+        if (e.nativeEvent.isComposing) return; // ✅ 한글 조합 중 Enter 무시
         if (e.key === 'Enter') {
+            e.preventDefault();
             runSearch();
             e.currentTarget.blur();
         }
     };
 
+    const onChange = (e) => setInputValue(e.target.value);
+    const onCompositionStart = () => {};
+    const onCompositionEnd = (e) => {
+        // 조합 끝나면 value 동기화 (제어 컴포넌트)
+        setInputValue(e.currentTarget.value);
+    };
+
+    const pickSuggestion = async (name) => {
+        setInputValue(name);
+        setShowSuggest(false);
+        // 지도 이동 + 강조
+        await focusStoreByName(name);
+        // 하단 리스트 갱신
+        setSearchQuery(name);
+    };
+
     return (
         <div className="mobile-frame">
             <div ref={containerRef} className="mx-auto w-full max-w-[420px] relative overflow-hidden h-[100dvh]">
-                {/* 지도 캔버스 */}
+                {/* 지도 */}
                 <div ref={mapElRef} className="absolute inset-0 z-0" />
 
-                {/* 🔥 검색창 + 필터 */}
+                {/* 검색 & QR */}
                 <div className="absolute left-1/2 top-3 w-[90%] -translate-x-1/2 z-10 space-y-2">
-                    {/* 검색 인풋 + 아이콘 */}
                     <div className="relative">
                         <input
                             ref={inputRef}
                             className="w-full rounded-xl bg-white/95 px-4 py-3 pr-10 shadow placeholder:text-zinc-400"
                             placeholder="매장명으로 찾기"
-                            onKeyDown={handleKeyDown}
-                            defaultValue={searchQuery}
+                            value={inputValue}
+                            onChange={onChange}
+                            onKeyDown={onKeyDown}
+                            onCompositionStart={onCompositionStart}
+                            onCompositionEnd={onCompositionEnd}
+                            onFocus={() => {
+                                if (suggestions.length) setShowSuggest(true);
+                            }}
+                            onBlur={() => {
+                                setTimeout(() => setShowSuggest(false), 120);
+                            }}
                         />
                         <button
                             type="button"
@@ -264,13 +377,30 @@ export default function PartnerStores() {
                         >
                             <img src={SearchIcon} alt="" className="h-5 w-5 opacity-70" />
                         </button>
+
+                        {/* 자동완성 드롭다운 */}
+                        {showSuggest && suggestions.length > 0 && (
+                            <ul className="absolute left-0 right-0 mt-1 rounded-xl bg-white/95 shadow-lg ring-1 ring-black/5 max-h-60 overflow-auto z-20">
+                                {suggestions.map((s, i) => (
+                                    <li key={`${s}-${i}`} className="border-b last:border-b-0 border-zinc-100">
+                                        <button
+                                            type="button"
+                                            onClick={() => pickSuggestion(s)}
+                                            className="w-full text-left px-3 py-2 hover:bg-zinc-100"
+                                            dangerouslySetInnerHTML={{ __html: highlightMatch(s, inputValue.trim()) }}
+                                        />
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                     </div>
 
                     <button
                         onClick={() => setQrOpen(true)}
-                        className="absolute left-0 top-[54px] flex items-center gap-2 rounded-full bg-green-600 px-4 py-2 text-white shadow-lg active:scale-[.98]"
+                        className="absolute left-0 top-[54px] flex items-center gap-2 rounded-[15px] bg-[#32B544] w-[200px] h-[40px] pl-3 text-white shadow-lg active:scale-[.98]"
                     >
-                        <span className="text-[13px] font-semibold">매장에서 QR로 결제하기</span>
+                        <img src={QRIcon} alt="" className="h-4 w-4 opacity-90" />
+                        <span className="text-[15px] font-semibold">매장에서 QR로 결제하기</span>
                     </button>
                 </div>
 
@@ -282,55 +412,51 @@ export default function PartnerStores() {
                             snapPoints={[0.18, 0.55, 1]}
                             defaultSnap={1}
                             header={
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between px-3 py-2">
                                     <span className="text-base font-semibold">가까운 매장</span>
-                                    <span className="text-sm text-zinc-500">
-                                        {loading ? '로딩 중...' : `${merchants.length}개`}
-                                    </span>
                                 </div>
                             }
                         >
-                            <div className="p-4">
+                            <div className="px-3 pt-1 pb-2 -mt-1">
                                 {loading ? (
-                                    <div className="text-center py-8 text-zinc-500">로딩 중...</div>
+                                    <div className="text-center py-6 text-zinc-500">로딩 중...</div>
                                 ) : merchants.length === 0 ? (
-                                    <div className="text-center py-8 text-zinc-500">검색 결과가 없습니다.</div>
+                                    <div className="text-center py-6 text-zinc-500">검색 결과가 없습니다.</div>
                                 ) : (
-                                    <ul className="divide-y">
-                                        {merchants.map((store, i) => (
-                                            <li key={store.id || i} className="px-4 py-3">
-                                                <button
-                                                    onClick={() => flyTo(store.latitude, store.longitude)}
-                                                    className="w-full text-left"
-                                                >
-                                                    <div className="flex items-center justify-between">
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[11px] rounded-md bg-zinc-100 px-2 py-0.5">
-                                                                    {store.카테고리 || store.category}
-                                                                </span>
-                                                                <span className="font-semibold">
-                                                                    {store.시설명 || store.name}
-                                                                </span>
-                                                            </div>
-                                                            <div className="mt-1 text-xs text-zinc-500">
-                                                                {store.소재지 || store.address}
-                                                            </div>
-                                                            {store.전화번호 && (
-                                                                <div className="mt-1 text-xs text-blue-500">
-                                                                    {store.전화번호}
+                                    <ul className="divide-y divide-zinc-100">
+                                        {merchants.map((store, i) => {
+                                            const name = store.시설명 || store.name;
+                                            const cate = store.카테고리 || store.category;
+                                            const addr = store.소재지 || store.address;
+                                            const ll = getLatLng(store);
+
+                                            return (
+                                                <li key={store.id || i} className="px-3 py-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (ll) flyTo(ll.lat, ll.lng);
+                                                        }}
+                                                        className="w-full text-left"
+                                                    >
+                                                        <div className="flex items-center justify-between">
+                                                            <div>
+                                                                <div className="flex flex-col items-start gap-0.5">
+                                                                    <span className="text-[11px] rounded-md bg-zinc-100 px-2 py-0.5">
+                                                                        {cate}
+                                                                    </span>
+                                                                    <span className="font-semibold leading-tight">
+                                                                        {name}
+                                                                    </span>
                                                                 </div>
-                                                            )}
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <div className="text-xs text-zinc-500">
-                                                                {store.지역 || store.region}
+                                                                <div className="mt-0.5 text-xs text-zinc-500">
+                                                                    {addr}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                </button>
-                                            </li>
-                                        ))}
+                                                    </button>
+                                                </li>
+                                            );
+                                        })}
                                     </ul>
                                 )}
                             </div>
@@ -346,7 +472,7 @@ export default function PartnerStores() {
                 )}
             </div>
 
-            {/* 하단 탭 */}
+            {/* 하단 탭 & QR 모달 */}
             <BottomTap />
             <QrModal open={qrOpen} onClose={() => setQrOpen(false)} src="/qr.png" />
         </div>
