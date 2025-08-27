@@ -271,18 +271,18 @@ const Onboarding = () => {
                 <br />
                 제가 뭐라고 불러드리면 좋을까요?
             </h1>
-            <div className="w-full mb-4 relative">
+            <div className="w-full mb-4 relative text-[#7D7D7D]">
                 <input
                     type="text"
                     value={nickname}
                     onChange={(e) => setNickname(e.target.value)}
-                    className="input-peak text-center"
+                    className="input-peak text-left"
                     placeholder="닉네임을 입력해주세요"
                 />
                 <button className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-400">✕</button>
             </div>
             <p className="text-gray-500 text-base mb-12 text-center">* 닉네임은 나중에 바꿀 수 있어요</p>
-            <button onClick={handleNextStep} disabled={!nickname} className="btn-peak w-full">
+            <button onClick={handleNextStep} disabled={!nickname} className="btn-peak w-full mb-5">
                 다음
             </button>
         </div>
