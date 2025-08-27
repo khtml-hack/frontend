@@ -282,7 +282,7 @@ const Onboarding = () => {
                 <button className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-400">✕</button>
             </div>
             <p className="text-gray-500 text-base mb-12 text-center">* 닉네임은 나중에 바꿀 수 있어요</p>
-            <button onClick={handleNextStep} disabled={!nickname} className="btn-peak w-full mb-5">
+            <button onClick={handleNextStep} disabled={!nickname} className="btn-peak w-full ">
                 다음
             </button>
         </div>
