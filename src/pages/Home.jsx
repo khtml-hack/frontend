@@ -3,11 +3,14 @@ import { useNavigate, NavLink } from 'react-router-dom';
 import { useKakaoMap, searchPlace, getCurrentLocation } from '../hooks/useKakaoMap';
 import { getTripRecommendation } from '../api/tripApi';
 import BottomTap from '../components/BottomTap';
+import TimeSettingModal from '../components/TimeSettingModal';
 
 const Home = () => {
     const [departure, setDeparture] = useState('');
     const [destination, setDestination] = useState('');
     const [showDepartureModal, setShowDepartureModal] = useState(false);
+    const [showTimeModal, setShowTimeModal] = useState(false);
+    const [arrivalTime, setArrivalTime] = useState('');
     const [nickname, setNickname] = useState('김혼잡');
     const [searchKeyword, setSearchKeyword] = useState('');
     const [searchResults, setSearchResults] = useState([]);
@@ -41,6 +44,12 @@ const Home = () => {
             }
         }
 
+        // 저장된 도착 시간 로드
+        const savedArrivalTime = localStorage.getItem('arrivalTime');
+        if (savedArrivalTime) {
+            setArrivalTime(savedArrivalTime);
+        }
+
         const savedFavorites = localStorage.getItem('favoriteLocations');
         if (savedFavorites) {
             try {
@@ -61,6 +70,40 @@ const Home = () => {
                 // 위치 권한이 없어도 앱은 정상 작동
             });
     }, []);
+
+    const handleTimeSet = (time) => {
+        setArrivalTime(time);
+        localStorage.setItem('arrivalTime', time);
+    };
+
+    const formatTimeForDisplay = (time) => {
+        if (!time) return '';
+        const [hour, minute] = time.split(':');
+        const hourNum = parseInt(hour);
+        const period = hourNum >= 12 ? '오후' : '오전';
+        const displayHour = hourNum % 12 || 12;
+        return `${period} ${displayHour}:${minute}`;
+    };
+
+    const formatTimeForAPI = (time) => {
+        if (!time) return null;
+
+        // arrive_by 필드는 오늘 날짜의 특정 시간을 ISO 8601 형식으로 전송
+        const today = new Date();
+        const [hour, minute] = time.split(':');
+        const arrivalDate = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            today.getDate(),
+            parseInt(hour),
+            parseInt(minute),
+            0,
+            0
+        );
+
+        // ISO 8601 형식으로 반환 (예: "2024-12-25T14:30:00.000Z")
+        return arrivalDate.toISOString();
+    };
 
     const handleFindOptimalTime = async () => {
         if (!departure || !destination) {
@@ -89,11 +132,13 @@ const Home = () => {
             localStorage.setItem('departure', departure);
             localStorage.setItem('destination', destination);
 
-            // AI 추천 API 호출
+            // AI 추천 API 호출 (arrive_by 파라미터 포함)
+            const arriveByTime = formatTimeForAPI(arrivalTime);
             const recommendation = await getTripRecommendation(
                 departure,
                 destination,
                 '110000', // 서울 지역 코드 (기본값)
+                arriveByTime,
                 token
             );
 
@@ -198,154 +243,116 @@ const Home = () => {
                 style={{ paddingBottom: 'max(env(safe-area-inset-bottom),12px)' }}
             >
                 {/* Header with green title */}
-                <header className="p-7">
-                    <h1 className="text-[clamp(22px,5vw,28px)] font-extrabold text-green-500">Peak_down</h1>
+                <header className="px-7 pt-12 pb-4">
+                    <h1 className="text-[32px] font-extrabold text-[#40d854] tracking-[-1.28px] leading-[45px]">
+                        Peak_down
+                    </h1>
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 px-5">
-                    <div className="mb-6 text-center">
-                        <p className="text-gray-700 mb-1">안녕하세요 {nickname} 님,</p>
-                        <p className="text-black font-medium text-lg leading-snug">
+                <main className="flex-1 px-7">
+                    {/* User Greeting */}
+                    <div className="mb-6">
+                        <p className="text-[#707070] text-[22px] font-semibold leading-[45px] mb-2">
+                            안녕하세요 {nickname} 님,
+                        </p>
+                        <p className="text-[#1b1b1b] font-semibold text-[25px] leading-[30px] tracking-[-1px]">
                             막히는 시간 피하고 돈 버는 시간을
                             <br />
                             찾아드릴게요.
                         </p>
                     </div>
 
-                    {/* Search Inputs */}
-                    <div className="space-y-2 mb-4 relative">
-                        <div
-                            className={`rounded-xl overflow-hidden border ${
-                                departure ? 'border-purple-200' : 'border-purple-200 border-2'
-                            }`}
+                    {/* Time Setting Info */}
+                    <div className="mb-4">
+                        <p
+                            className="text-[#8f8f8f] text-[14px] font-light leading-[35px] tracking-[-0.56px] cursor-pointer hover:text-[#40d854] transition-colors"
+                            onClick={() => setShowTimeModal(true)}
                         >
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="출발지 입력"
-                                    value={departure}
-                                    onChange={(e) => setDeparture(e.target.value)}
-                                    onClick={() => {
-                                        setSearchType('departure');
-                                        setShowDepartureModal(true);
-                                    }}
-                                    className="w-full bg-transparent text-gray-800 placeholder-gray-500 text-sm py-3.5 px-4 border-none outline-none"
-                                    readOnly
-                                />
-                                <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 20 20"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path
-                                            d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z"
-                                            stroke="#AAAAAA"
-                                            strokeWidth="1.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                        <path
-                                            d="M19 19L14.65 14.65"
-                                            stroke="#AAAAAA"
-                                            strokeWidth="1.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
+                            이 시간까지는 도착해야해요! 설정 {arrivalTime && `(${formatTimeForDisplay(arrivalTime)})`}
+                        </p>
+                    </div>
 
-                        {/* Swap Button */}
-                        {(departure || destination) && (
-                            <button
-                                className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center border border-purple-200 shadow-sm"
+                    {/* Divider */}
+                    <div className="h-px bg-[#ebebeb] mb-4"></div>
+
+                    {/* Search Inputs - Frame 116 Style */}
+                    <div className="mb-6">
+                        <div
+                            className="w-full bg-white rounded-[10px] relative"
+                            style={{
+                                border: '1px solid',
+                                borderImage: 'linear-gradient(90deg, rgba(87, 72, 255, 0.56) 0%, #40d854 100%) 1',
+                                minHeight: '91px',
+                            }}
+                        >
+                            {/* 출발지 입력 - Frame 117 */}
+                            <div
+                                className="flex items-center justify-between px-4 py-3 cursor-pointer"
                                 onClick={() => {
-                                    const temp = departure;
-                                    setDeparture(destination);
-                                    setDestination(temp);
+                                    setSearchType('departure');
+                                    setShowDepartureModal(true);
                                 }}
                             >
-                                <svg
-                                    width="16"
-                                    height="16"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
+                                <span
+                                    className={`text-[16px] font-medium leading-[35px] tracking-[-0.64px] ${
+                                        departure ? 'text-[#323232]' : 'text-[#8f8f8f]'
+                                    }`}
                                 >
+                                    {departure || '출발지 입력'}
+                                </span>
+                                <svg width="17" height="18" viewBox="0 0 17 18" fill="none">
                                     <path
-                                        d="M7 10L3 14L7 18"
-                                        stroke="#7C3AED"
-                                        strokeWidth="2"
+                                        d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z"
+                                        stroke="#AAAAAA"
+                                        strokeWidth="1.5"
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                     />
                                     <path
-                                        d="M17 14L21 10L17 6"
-                                        stroke="#7C3AED"
-                                        strokeWidth="2"
+                                        d="M19 19L14.65 14.65"
+                                        stroke="#AAAAAA"
+                                        strokeWidth="1.5"
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
-                                    />
-                                    <line
-                                        x1="3"
-                                        y1="14"
-                                        x2="21"
-                                        y2="14"
-                                        stroke="#7C3AED"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
                                     />
                                 </svg>
-                            </button>
-                        )}
+                            </div>
 
-                        <div
-                            className={`rounded-xl overflow-hidden border ${
-                                destination ? 'border-purple-200' : 'border-purple-200 border-2'
-                            }`}
-                        >
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="도착지 입력"
-                                    value={destination}
-                                    onChange={(e) => setDestination(e.target.value)}
-                                    onClick={() => {
-                                        setSearchType('destination');
-                                        setShowDepartureModal(true);
-                                    }}
-                                    className="w-full bg-transparent text-gray-800 placeholder-gray-500 text-sm py-3.5 px-4 border-none outline-none"
-                                    readOnly
-                                />
-                                <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                    <svg
-                                        width="20"
-                                        height="20"
-                                        viewBox="0 0 20 20"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path
-                                            d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z"
-                                            stroke="#AAAAAA"
-                                            strokeWidth="1.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                        <path
-                                            d="M19 19L14.65 14.65"
-                                            stroke="#AAAAAA"
-                                            strokeWidth="1.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    </svg>
-                                </button>
+                            {/* 구분선 */}
+                            <div className="h-px bg-gradient-to-r from-[rgba(87,72,255,0.56)] to-[#40d854] mx-4"></div>
+
+                            {/* 도착지 입력 - Frame 118 */}
+                            <div
+                                className="flex items-center justify-between px-4 py-3 cursor-pointer"
+                                onClick={() => {
+                                    setSearchType('destination');
+                                    setShowDepartureModal(true);
+                                }}
+                            >
+                                <span
+                                    className={`text-[16px] font-medium leading-[35px] tracking-[-0.64px] ${
+                                        destination ? 'text-[#323232]' : 'text-[#8f8f8f]'
+                                    }`}
+                                >
+                                    {destination || '도착지 입력'}
+                                </span>
+                                <svg width="17" height="18" viewBox="0 0 17 18" fill="none">
+                                    <path
+                                        d="M9 17C13.4183 17 17 13.4183 17 9C17 4.58172 13.4183 1 9 1C4.58172 1 1 4.58172 1 9C1 13.4183 4.58172 17 9 17Z"
+                                        stroke="#AAAAAA"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                    <path
+                                        d="M19 19L14.65 14.65"
+                                        stroke="#AAAAAA"
+                                        strokeWidth="1.5"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                </svg>
                             </div>
                         </div>
                     </div>
@@ -364,14 +371,14 @@ const Home = () => {
                     )}
 
                     {/* Find Optimal Time Button */}
-                    <div className="mb-8">
+                    <div className="mb-6">
                         <button
                             onClick={handleFindOptimalTime}
                             disabled={!departure || !destination || isLoading}
-                            className={`w-full py-3.5 rounded-xl font-medium text-base transition-all duration-200 flex items-center justify-center ${
+                            className={`w-full py-[13px] rounded-[15px] font-medium text-[22px] transition-all duration-200 flex items-center justify-center text-white ${
                                 departure && destination && !isLoading
-                                    ? 'bg-purple-600 text-white hover:bg-purple-700 active:bg-purple-800'
-                                    : 'bg-gray-300 text-gray-600'
+                                    ? 'bg-gradient-to-r from-[#5748ff8f] to-[#40d854]'
+                                    : 'bg-gradient-to-r from-[#5748ff8f] to-[#40d854]'
                             }`}
                         >
                             {isLoading ? (
@@ -401,14 +408,13 @@ const Home = () => {
                             ) : !departure || !destination ? (
                                 `${!departure ? '출발지' : '도착지'} 입력 필요`
                             ) : (
-                                'AI 최적 시간 찾기'
+                                ' AI 최적 시간 찾기'
                             )}
                         </button>
                     </div>
 
                     {/* Regional Currency Info Card */}
-                    <div className="mt-6">
-                        <h3 className="text-sm text-zinc-400 mb-2">나의 지역화폐 현황 및 사용</h3>
+                    <div className="mb-6">
                         <div className="bg-green-500 text-white rounded-2xl px-5 py-4">
                             <div className="flex items-baseline justify-between">
                                 <span className="font-semibold">나의 지역화폐 현황</span>
@@ -422,13 +428,18 @@ const Home = () => {
                                     적립/사용내역
                                 </button>
                                 <button
-                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
                                     onClick={() => navigate('/stores')}
+                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
                                 >
                                     사용하러 가기
                                 </button>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Advertisement Image */}
+                    <div className="mb-6">
+                        <img src="/광고.png" alt="광고" className="w-full rounded-lg" />
                     </div>
                 </main>
 
@@ -724,6 +735,14 @@ const Home = () => {
                     </div>
                 )}
             </div>
+
+            {/* Time Setting Modal */}
+            <TimeSettingModal
+                isOpen={showTimeModal}
+                onClose={() => setShowTimeModal(false)}
+                onTimeSet={handleTimeSet}
+                initialTime={arrivalTime || '12:00'}
+            />
         </div>
     );
 };

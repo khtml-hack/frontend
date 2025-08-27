@@ -1,9 +1,35 @@
 const API_BASE_URL = 'https://peakdown.site/api';
 
 // 여행 추천 생성
-export const getTripRecommendation = async (originAddress, destinationAddress, regionCode = '110000', token) => {
+export const getTripRecommendation = async (
+    originAddress,
+    destinationAddress,
+    regionCode = '110000',
+    arriveBy = null,
+    token
+) => {
     try {
-        console.log('Getting trip recommendation:', { originAddress, destinationAddress, regionCode });
+        console.log('Getting trip recommendation:', {
+            originAddress,
+            destinationAddress,
+            regionCode,
+            arriveBy,
+            arriveByType: typeof arriveBy,
+        });
+
+        const requestBody = {
+            origin_address: originAddress,
+            destination_address: destinationAddress,
+            region_code: regionCode,
+        };
+
+        // arrive_by가 제공된 경우에만 추가
+        if (arriveBy) {
+            requestBody.arrive_by = arriveBy;
+            console.log('Adding arrive_by to request:', arriveBy);
+        }
+
+        console.log('Final request body:', JSON.stringify(requestBody, null, 2));
 
         const response = await fetch(`${API_BASE_URL}/trips/recommend/`, {
             method: 'POST',
@@ -11,11 +37,7 @@ export const getTripRecommendation = async (originAddress, destinationAddress, r
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({
-                origin_address: originAddress,
-                destination_address: destinationAddress,
-                region_code: regionCode,
-            }),
+            body: JSON.stringify(requestBody),
         });
 
         if (!response.ok) {
