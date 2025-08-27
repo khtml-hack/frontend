@@ -52,8 +52,7 @@ function ensureStoreLabelStyle() {
       border-radius: 10px;
       box-shadow: 0 1px 2px rgba(0,0,0,.08);
       pointer-events: none;
-    }
-  `;
+    }`;
     document.head.appendChild(style);
 }
 function escapeHtml(s = '') {
@@ -66,6 +65,15 @@ function escapeHtml(s = '') {
 }
 function labelContent(name) {
     return `<div class="store-label">${escapeHtml(name)}</div>`;
+}
+
+// === 현재 위치 마커 이미지 (public/current.png 사용)
+function getMyLocMarkerImage(kakao, size = 30) {
+    const url = '/current.png';
+    const imgSize = new kakao.maps.Size(size, size);
+
+    const offset = new kakao.maps.Point(size / 2, size / 2);
+    return new kakao.maps.MarkerImage(url, imgSize, { offset });
 }
 
 // API
@@ -89,10 +97,7 @@ async function fetchMapMarkers(limit = 500) {
 // 상점 목록 (검색만 사용)
 async function fetchMerchantsList(page = 1, pageSize = 20, search = '') {
     try {
-        const params = new URLSearchParams({
-            page: String(page),
-            page_size: String(pageSize),
-        });
+        const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
         if (search) params.append('search', search);
         const res = await fetch(`${API_BASE_URL}/api/merchants/list/?${params}`);
         if (!res.ok) throw new Error('Failed to fetch merchants');
@@ -134,16 +139,20 @@ export default function PartnerStores() {
     const markersRef = useRef([]);
     const labelsRef = useRef([]);
 
+    // ✅ 현재 위치 관련 ref (Marker로 변경)
+    const myLocMarkerRef = useRef(null);
+    const myAccCircleRef = useRef(null);
+    const geoWatchRef = useRef(null);
+
     const inputRef = useRef(null);
-    const composingRef = useRef(false); // ✅ IME 조합 상태
 
     const [containerReady, setContainerReady] = useState(false);
     const [mapReady, setMapReady] = useState(false);
     const [merchants, setMerchants] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    const [inputValue, setInputValue] = useState(''); // ✅ 제어 인풋
-    const [searchQuery, setSearchQuery] = useState(''); // 실제 검색에 쓰는 값
+    const [inputValue, setInputValue] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
 
     // 자동완성 상태
     const [suggestions, setSuggestions] = useState([]);
@@ -161,7 +170,7 @@ export default function PartnerStores() {
         check();
     }, []);
 
-    // 지도 초기화
+    // 지도 초기화 (+ 현재 위치 마커)
     useEffect(() => {
         if (!containerReady) return;
 
@@ -172,25 +181,94 @@ export default function PartnerStores() {
                     const map = new kakao.maps.Map(mapElRef.current, { center, level: 5 });
                     mapRef.current = map;
 
+                    // 현재 위치 업데이트 함수 (Marker + Circle)
+                    const updateMyLocation = (lat, lng, accuracy) => {
+                        const pos = new kakao.maps.LatLng(lat, lng);
+
+                        // 현재 위치 마커 (public/current.png)
+                        if (!myLocMarkerRef.current) {
+                            myLocMarkerRef.current = new kakao.maps.Marker({
+                                position: pos,
+                                image: getMyLocMarkerImage(kakao, 28),
+                                zIndex: 2000,
+                            });
+                            myLocMarkerRef.current.setMap(map);
+                        } else {
+                            myLocMarkerRef.current.setPosition(pos);
+                        }
+
+                        // 정확도 원
+                        const radius = Math.max(accuracy || 50, 30);
+                        if (!myAccCircleRef.current) {
+                            myAccCircleRef.current = new kakao.maps.Circle({
+                                center: pos,
+                                radius,
+                                strokeWeight: 1,
+                                strokeColor: '#3b82f6',
+                                strokeOpacity: 0.6,
+                                strokeStyle: 'shortdash',
+                                fillColor: '#3b82f6',
+                                fillOpacity: 0.12,
+                                zIndex: 1500,
+                            });
+                            myAccCircleRef.current.setMap(map);
+                        } else {
+                            myAccCircleRef.current.setPosition(pos);
+                            myAccCircleRef.current.setRadius(radius);
+                        }
+                    };
+
+                    // 최초 1회 현재 위치
                     if (navigator.geolocation) {
                         navigator.geolocation.getCurrentPosition(
                             (pos) => {
-                                const ll = new kakao.maps.LatLng(pos.coords.latitude, pos.coords.longitude);
+                                const { latitude, longitude, accuracy } = pos.coords;
+                                const ll = new kakao.maps.LatLng(latitude, longitude);
                                 map.setCenter(ll);
+                                updateMyLocation(latitude, longitude, accuracy);
                             },
-                            () => {}
+                            () => {},
+                            { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
+                        );
+
+                        // 지속 추적
+                        geoWatchRef.current = navigator.geolocation.watchPosition(
+                            (pos) => {
+                                const { latitude, longitude, accuracy } = pos.coords;
+                                updateMyLocation(latitude, longitude, accuracy);
+                            },
+                            () => {},
+                            { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
                         );
                     }
+
                     setMapReady(true);
                 });
             })
             .catch((e) => console.error('Kakao SDK load error:', e));
 
         return () => {
+            // 마커/라벨 정리
             markersRef.current.forEach((m) => m.setMap(null));
             labelsRef.current.forEach((o) => o.setMap(null));
             markersRef.current = [];
             labelsRef.current = [];
+
+            // 현재 위치 마커/원 정리
+            if (myLocMarkerRef.current) {
+                myLocMarkerRef.current.setMap(null);
+                myLocMarkerRef.current = null;
+            }
+            if (myAccCircleRef.current) {
+                myAccCircleRef.current.setMap(null);
+                myAccCircleRef.current = null;
+            }
+            // geolocation watch 해제
+            if (geoWatchRef.current != null) {
+                navigator.geolocation.clearWatch(geoWatchRef.current);
+                geoWatchRef.current = null;
+            }
+
             mapRef.current = null;
             setMapReady(false);
         };
@@ -275,7 +353,7 @@ export default function PartnerStores() {
         return () => clearTimeout(t);
     }, [inputValue]);
 
-    // ====== 선택한 이름으로 지도 포커싱(이동 + 말풍선) ======
+    // ====== 선택한 이름으로 지도 포커싱(이동) ======
     const focusStoreByName = async (name) => {
         try {
             const { merchants } = await fetchMerchantsList(1, 5, name);
@@ -311,9 +389,7 @@ export default function PartnerStores() {
     const runSearch = async () => {
         const kw = inputValue.trim();
         if (!kw) return;
-        // 먼저 지도 포커싱 시도
         await focusStoreByName(kw);
-        // 리스트 갱신
         setSearchQuery(kw);
         setShowSuggest(false);
     };
@@ -329,17 +405,12 @@ export default function PartnerStores() {
 
     const onChange = (e) => setInputValue(e.target.value);
     const onCompositionStart = () => {};
-    const onCompositionEnd = (e) => {
-        // 조합 끝나면 value 동기화 (제어 컴포넌트)
-        setInputValue(e.currentTarget.value);
-    };
+    const onCompositionEnd = (e) => setInputValue(e.currentTarget.value);
 
     const pickSuggestion = async (name) => {
         setInputValue(name);
         setShowSuggest(false);
-        // 지도 이동 + 강조
         await focusStoreByName(name);
-        // 하단 리스트 갱신
         setSearchQuery(name);
     };
 
