@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, NavLink } from 'react-router-dom';
 import { useKakaoMap, searchPlace, getCurrentLocation } from '../hooks/useKakaoMap';
 import { getTripRecommendation } from '../api/tripApi';
+import BottomTap from '../components/BottomTap';
 
 const Home = () => {
     const [departure, setDeparture] = useState('');
@@ -432,34 +433,7 @@ const Home = () => {
                 </main>
 
                 {/* 하단 탭 */}
-                <nav className="sticky bottom-0 border-t bg-white">
-                    <ul className="flex justify-around py-3 text-[18px]">
-                        <li>
-                            <NavLink
-                                to="/stores"
-                                className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}
-                            >
-                                결제매장
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/home"
-                                className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}
-                            >
-                                홈
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink
-                                to="/mypage"
-                                className={({ isActive }) => (isActive ? 'font-semibold' : 'opacity-60')}
-                            >
-                                마이페이지
-                            </NavLink>
-                        </li>
-                    </ul>
-                </nav>
+                <BottomTap />
 
                 {/* Departure Modal */}
                 {showDepartureModal && (
