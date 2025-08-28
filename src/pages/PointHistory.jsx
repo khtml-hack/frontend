@@ -2,7 +2,7 @@ import React from 'react';
 import BottomTap from '../components/BottomTap';
 import BeforeIcon from '../assets/Previous.png';
 import { useNavigate } from 'react-router-dom';
-
+import MoneyIcon from '../assets/money.png';
 const PointHistory = () => {
     const navigate = useNavigate();
     return (
@@ -18,8 +18,10 @@ const PointHistory = () => {
             </div>
 
             {/* 초록 카드 */}
-            <div className="bg-green-500 text-white rounded-2xl w-[318px] h-[112px] mx-auto flex items-center justify-between px-6 mb-6">
-                <div className="flex items-baseline justify-center h-full flex-col gap-2">
+            <div className="bg-green-500 text-white rounded-2xl w-[318px] h-[112px] mx-auto flex items-center justify-between px-6 mb-6 relative overflow-hidden">
+                <img src={MoneyIcon} alt="" className="absolute bottom-1 left-4 w-[120px] h-[90px] opacity-80" />
+
+                <div className="flex items-baseline justify-center h-full flex-col gap-2 relative">
                     <span className="font-semibold">나의 지역화폐 현황</span>
                     <span className="text-xl font-extrabold">2,500원</span>
                 </div>

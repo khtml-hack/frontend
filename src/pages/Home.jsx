@@ -4,7 +4,7 @@ import { useKakaoMap, searchPlace, getCurrentLocation } from '../hooks/useKakaoM
 import { getTripRecommendation } from '../api/tripApi';
 import BottomTap from '../components/BottomTap';
 import TimeSettingModal from '../components/TimeSettingModal';
-
+import MoneyIcon from '../assets/Money.png';
 const Home = () => {
     const [departure, setDeparture] = useState('');
     const [destination, setDestination] = useState('');
@@ -415,24 +415,32 @@ const Home = () => {
 
                     {/* Regional Currency Info Card */}
                     <div className="mb-6">
-                        <div className="bg-green-500 text-white rounded-2xl px-5 py-4">
-                            <div className="flex items-baseline justify-between">
-                                <span className="font-semibold">나의 지역화폐 현황</span>
-                                <span className="text-xl font-extrabold">2,500원</span>
-                            </div>
-                            <div className="mt-3 flex gap-2">
-                                <button
-                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
-                                    onClick={() => navigate('/point-history')}
-                                >
-                                    적립/사용내역
-                                </button>
-                                <button
-                                    onClick={() => navigate('/stores')}
-                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
-                                >
-                                    사용하러 가기
-                                </button>
+                        <div className="bg-green-500 text-white rounded-2xl px-5 py-4 relative overflow-hidden">
+                            <img
+                                src={MoneyIcon}
+                                alt=""
+                                className="absolute bottom-0 left-0 w-[110] h-[60] opacity-80"
+                            />
+
+                            <div className="relative">
+                                <div className="flex items-baseline justify-between">
+                                    <span className="font-semibold">나의 지역화폐 현황</span>
+                                    <span className="text-xl font-extrabold">2,500원</span>
+                                </div>
+                                <div className="mt-3 flex gap-2">
+                                    <button
+                                        className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                        onClick={() => navigate('/point-history')}
+                                    >
+                                        적립/사용내역
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/stores')}
+                                        className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                    >
+                                        사용하러 가기
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
