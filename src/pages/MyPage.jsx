@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { patchNickname } from '../api/nicknameApi';
 import { logoutUser } from '../api/userApi';
 import BottomTap from '../components/BottomTap';
-
+import MoneyIcon from '../assets/money.png';
 export default function MyPage() {
     const navigate = useNavigate();
 
@@ -149,24 +149,31 @@ export default function MyPage() {
 
                         {/* 현황 섹션 */}
                         <h3 className="text-sm text-zinc-400">나의 지역화폐 현황 및 사용</h3>
-                        <div className="bg-green-500 text-white rounded-2xl px-5 py-4">
-                            <div className="flex items-baseline justify-between">
-                                <span className="font-semibold">나의 지역화폐 현황</span>
-                                <span className="text-xl font-extrabold">2,500원</span>
-                            </div>
-                            <div className="mt-3 flex gap-2">
-                                <button
-                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
-                                    onClick={() => navigate('/point-history')}
-                                >
-                                    적립/사용내역
-                                </button>
-                                <button
-                                    onClick={() => navigate('/stores')}
-                                    className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
-                                >
-                                    사용하러 가기
-                                </button>
+                        <div className="bg-green-500 text-white rounded-2xl px-5 py-4 relative overflow-hidden">
+                            <img
+                                src={MoneyIcon}
+                                alt=""
+                                className="absolute bottom-1 left-0 w-[130px] h-[100px] opacity-80"
+                            />
+                            <div className="relative">
+                                <div className="flex items-baseline justify-between">
+                                    <span className="font-semibold">나의 지역화폐 현황</span>
+                                    <span className="text-xl font-extrabold">2,500원</span>
+                                </div>
+                                <div className="mt-3 flex gap-2">
+                                    <button
+                                        className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                        onClick={() => navigate('/point-history')}
+                                    >
+                                        적립/사용내역
+                                    </button>
+                                    <button
+                                        onClick={() => navigate('/stores')}
+                                        className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                    >
+                                        사용하러 가기
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
