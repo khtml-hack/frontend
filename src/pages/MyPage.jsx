@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { patchNickname } from '../api/nicknameApi';
 import { logoutUser } from '../api/userApi';
 import BottomTap from '../components/BottomTap';
-import MoneyIcon from '../assets/money.png';
+import MoneyIcon from '../assets/Money.png';
 export default function MyPage() {
     const navigate = useNavigate();
 
