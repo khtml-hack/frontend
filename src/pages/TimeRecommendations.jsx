@@ -67,6 +67,46 @@ const TimeRecommendations = () => {
         return { icon: '🔴', text: '매우혼잡' };
     };
 
+    // 시간 차이 계산 함수
+    const calculateTimeDifference = (departureTimeStr) => {
+        try {
+            if (!departureTimeStr || departureTimeStr.includes('지금')) {
+                return '지금';
+            }
+
+            // API에서 받은 "지금 출발 (16:52)" 형태에서 시간 추출
+            const timeMatch = departureTimeStr.match(/\((\d{1,2}:\d{2})\)/);
+            if (!timeMatch) return '지금';
+
+            const targetTime = timeMatch[1];
+            const [targetHour, targetMinute] = targetTime.split(':').map(Number);
+
+            const now = new Date();
+            const target = new Date();
+            target.setHours(targetHour, targetMinute, 0, 0);
+
+            // 만약 목표 시간이 현재 시간보다 이전이면 다음날로 처리
+            if (target <= now) {
+                target.setDate(target.getDate() + 1);
+            }
+
+            const diffMs = target.getTime() - now.getTime();
+            const diffMinutes = Math.round(diffMs / (1000 * 60));
+
+            if (diffMinutes < 1) return '지금';
+            if (diffMinutes < 60) return `${diffMinutes}분`;
+
+            const hours = Math.floor(diffMinutes / 60);
+            const remainingMinutes = diffMinutes % 60;
+
+            if (remainingMinutes === 0) return `${hours}시간`;
+            return `${hours}시간 ${remainingMinutes}분`;
+        } catch (e) {
+            console.error('시간 차이 계산 오류:', e);
+            return '지금';
+        }
+    };
+
     // API 데이터에서 현재 출발과 최적 시간만 추출
     const getCurrentAndOptimal = () => {
         const current = recommendationData?.ui?.current;
@@ -78,8 +118,8 @@ const TimeRecommendations = () => {
         return {
             current: current
                 ? {
-                      departureTime: current.departure_time || '15:56',
-                      arrivalTime: current.arrival_time || '16:16',
+                      departureTime: current.departure_time || '지금',
+                      arrivalTime: current.arrival_time || '도착시간',
                       duration: current.duration_min || 20,
                       traffic: currentTraffic,
                       rawData: current,
@@ -88,14 +128,15 @@ const TimeRecommendations = () => {
             optimal: optimal
                 ? {
                       title: optimal.title || '최적 시간',
-                      departText: optimal.depart_in_text || '19분 뒤 출발',
-                      optimalTime: optimal.optimal_departure_time || '16:16',
-                      arrivalTime: optimal.arrival_time || '16:33',
-                      duration: optimal.expected_duration_min || 17,
+                      departText: optimal.depart_in_text || '30분 뒤 출발',
+                      optimalTime: optimal.optimal_departure_time || '16:52',
+                      arrivalTime: optimal.arrival_time || '도착시간',
+                      duration: optimal.expected_duration_min || 26,
                       traffic: optimalTraffic,
                       timeSaved: optimal.time_saved_min || 3,
                       reward: optimal.reward_amount || 30,
                       rawData: optimal,
+                      timeDiff: calculateTimeDifference(optimal.depart_in_text),
                   }
                 : null,
         };
@@ -157,7 +198,8 @@ const TimeRecommendations = () => {
                         >
                             알림 받고
                             <br />
-                            지금 뒤<br />
+                            지금
+                            <br />
                             출발하기
                         </button>
                     </div>
@@ -176,9 +218,7 @@ const TimeRecommendations = () => {
                                         최적 시간
                                     </span>
                                 </div>
-                                <p className="text-base mb-2">
-                                    {optimal.departText} ({optimal.optimalTime})
-                                </p>
+                                <p className="text-base mb-2">{optimal.departText}</p>
                                 <p className="text-sm opacity-90 mb-1">
                                     예상 도착시간: {optimal.arrivalTime} (소요시간: {optimal.duration}분)
                                 </p>
@@ -202,7 +242,7 @@ const TimeRecommendations = () => {
                             >
                                 알림 받고
                                 <br />
-                                19분 뒤<br />
+                                {optimal.timeDiff} 뒤<br />
                                 출발하기
                             </button>
                         </div>
