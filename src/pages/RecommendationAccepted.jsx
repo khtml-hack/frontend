@@ -9,14 +9,20 @@ import {
     hasLeftOrigin,
     hasArrivedAtDestination,
 } from '../utils/locationUtils';
+import KakaoMap from '../components/map/KakaoMap';
+import RewardModal from '../components/reward/RewardModal';
+import BottomTap from '../components/BottomTap';
 
 const RecommendationAccepted = () => {
+    console.log('🚀 RecommendationAccepted 컴포넌트 렌더링 시작');
+
     const [currentStep, setCurrentStep] = useState('waiting'); // waiting, monitoring, traveling, completed
     const [timeLeft, setTimeLeft] = useState(0);
     const [tripId, setTripId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [rewardData, setRewardData] = useState(null);
     const [showDepartureModal, setShowDepartureModal] = useState(false);
+    const [showRewardModal, setShowRewardModal] = useState(false);
 
     // 위치 관련 상태
     const [originLocation, setOriginLocation] = useState(null);
@@ -28,42 +34,157 @@ const RecommendationAccepted = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const { selectedRecommendation, originalApiData, departure, destination } = location.state || {};
+    console.log('📍 현재 location state:', location.state);
+
+    // state가 없을 때를 대비한 기본값 설정
+    const { selectedRecommendation, originalApiData, departure, destination } = location.state || {
+        selectedRecommendation: { type: 'current' },
+        departure: '동대문구청',
+        destination: '한국외국어대학교 서울캠퍼스',
+    };
+
+    // 데이터가 없을 때 홈으로 리다이렉트하는 대신 기본값 사용
+    useEffect(() => {
+        if (!location.state) {
+            console.warn('페이지 state가 없습니다. 기본값을 사용합니다.');
+            // navigate('/home'); // 리다이렉트 비활성화
+        }
+    }, [location.state, navigate]);
+
+    // 실제 표시할 주소 계산
+    const getDisplayAddresses = () => {
+        const from = originalApiData?.origin_address || departure || '동대문구청';
+        const to = originalApiData?.destination_address || destination || '한국외국어대학교 서울캠퍼스';
+        return { from, to };
+    };
+
+    // 주소별 fallback 좌표 매핑
+    const getLocationFallback = (address) => {
+        const addressLower = address.toLowerCase();
+        
+        // 한국외국어대학교
+        if (addressLower.includes('한국외국어대학교') || addressLower.includes('서울캠퍼스') || addressLower.includes('한국외대')) {
+            return {
+                lat: 37.5959,
+                lng: 127.0587,
+                address: '한국외국어대학교 서울캠퍼스',
+            };
+        }
+        
+        // 동대문구청
+        if (addressLower.includes('동대문구청') || addressLower.includes('동대문')) {
+            return {
+                lat: 37.5745,
+                lng: 127.0399,
+                address: '동대문구청',
+            };
+        }
+        
+        // 강남역
+        if (addressLower.includes('강남역') || addressLower.includes('강남')) {
+            return {
+                lat: 37.4979,
+                lng: 127.0276,
+                address: '강남역',
+            };
+        }
+        
+        // 홍대입구역
+        if (addressLower.includes('홍대') || addressLower.includes('홍익대')) {
+            return {
+                lat: 37.5563,
+                lng: 126.9222,
+                address: '홍대입구역',
+            };
+        }
+        
+        // 명동
+        if (addressLower.includes('명동')) {
+            return {
+                lat: 37.5636,
+                lng: 126.9826,
+                address: '명동',
+            };
+        }
+        
+        // 서울역
+        if (addressLower.includes('서울역')) {
+            return {
+                lat: 37.5547,
+                lng: 126.9706,
+                address: '서울역',
+            };
+        }
+        
+        // 기본값 (서울 중심가)
+        console.warn('알 수 없는 주소, 기본 좌표 사용:', address);
+        return {
+            lat: 37.5665,
+            lng: 126.978,
+            address: address,
+        };
+    };
 
     // 컴포넌트 마운트시 출발지/목적지 좌표 가져오기
     useEffect(() => {
         const initializeLocations = async () => {
             try {
+                // 우선순위: API 응답 주소 > 전달받은 주소 > 기본값
+                const originAddress = originalApiData?.origin_address || departure || '동대문구청';
+                const destAddress =
+                    originalApiData?.destination_address || destination || '한국외국어대학교 서울캠퍼스';
+
+                console.log('🔍 사용할 주소들:', { originAddress, destAddress });
+                console.log('🔍 API 데이터:', originalApiData);
+                console.log('🔍 전달받은 주소:', { departure, destination });
+
                 // 출발지와 목적지의 좌표를 가져옴
                 const [originCoords, destCoords] = await Promise.all([
-                    geocodeAddress(departure || '한국외국어대학교').catch(() => ({
-                        lat: 37.5665,
-                        lng: 126.978,
-                        address: departure || '한국외국어대학교',
-                    })),
-                    geocodeAddress(destination || '강남역').catch(() => ({
-                        lat: 37.4979,
-                        lng: 127.0276,
-                        address: destination || '강남역',
-                    })),
+                    geocodeAddress(originAddress).catch(() => {
+                        console.log('📍 출발지 geocoding 실패, fallback 사용:', originAddress);
+                        // 다양한 주소에 대한 fallback 좌표
+                        return getLocationFallback(originAddress);
+                    }),
+                    geocodeAddress(destAddress).catch(() => {
+                        console.log('📍 목적지 geocoding 실패, fallback 사용:', destAddress);
+                        // 다양한 주소에 대한 fallback 좌표
+                        return getLocationFallback(destAddress);
+                    }),
                 ]);
+
+                console.log('📍 최종 출발지 좌표:', originCoords);
+                console.log('📍 최종 목적지 좌표:', destCoords);
 
                 setOriginLocation(originCoords);
                 setDestinationLocation(destCoords);
+
+                // 상태 업데이트 후 확인
+                setTimeout(() => {
+                    console.log('📍 State 업데이트 후 originLocation:', originCoords);
+                    console.log('📍 State 업데이트 후 destinationLocation:', destCoords);
+                }, 100);
 
                 console.log('출발지 좌표:', originCoords);
                 console.log('목적지 좌표:', destCoords);
             } catch (error) {
                 console.error('주소 좌표 변환 실패:', error);
-                // 완전 실패시 기본 좌표 사용
-                setOriginLocation({ lat: 37.5665, lng: 126.978, address: departure || '한국외국어대학교' });
-                setDestinationLocation({ lat: 37.4979, lng: 127.0276, address: destination || '강남역' });
+                // 완전 실패시에도 주소별 fallback 사용
+                const originAddress = originalApiData?.origin_address || departure || '동대문구청';
+                const destAddress = originalApiData?.destination_address || destination || '한국외국어대학교 서울캠퍼스';
+                
+                const fallbackOrigin = getLocationFallback(originAddress);
+                const fallbackDest = getLocationFallback(destAddress);
+
+                console.log('📍 Complete Fallback 좌표 사용:', { fallbackOrigin, fallbackDest });
+
+                setOriginLocation(fallbackOrigin);
+                setDestinationLocation(fallbackDest);
                 setLocationError('주소 검색에 실패하여 기본 위치를 사용합니다.');
             }
         };
 
         initializeLocations();
-    }, [departure, destination]);
+    }, [departure, destination, originalApiData]);
 
     // 출발 시간까지 남은 시간 계산
     useEffect(() => {
@@ -236,11 +357,13 @@ const RecommendationAccepted = () => {
             const arrivalResult = await arriveTrip(id, token);
             setRewardData(arrivalResult.completion_reward);
             setCurrentStep('completed');
+            setShowRewardModal(true); // 보상 모달 표시
             stopLocationMonitoring(); // 위치 감시 중지
         } catch (error) {
             console.error('도착 처리 실패:', error);
             // 에러 발생시에도 완료 화면으로 이동 (데모용)
             setCurrentStep('completed');
+            setShowRewardModal(true); // 보상 모달 표시
             stopLocationMonitoring(); // 위치 감시 중지
         }
     };
@@ -286,15 +409,22 @@ const RecommendationAccepted = () => {
 
     // 위치 감시 중 화면 (출발 대기 중)
     if (currentStep === 'monitoring') {
+        const { from, to } = getDisplayAddresses();
+
         return (
             <div className="mobile-frame">
-                {/* Map Background */}
-                <div className="h-96 bg-gray-200 relative">
-                    <div className="absolute inset-0 bg-gray-300 opacity-50"></div>
-                    {/* 현재 위치 표시 */}
+                {/* Kakao Map Background */}
+                <div className="h-96 relative">
+                    <KakaoMap
+                        originLocation={originLocation}
+                        destinationLocation={destinationLocation}
+                        currentLocation={currentLocation}
+                        currentStep={currentStep}
+                    />
+                    {/* 현재 위치 표시 오버레이 */}
                     {currentLocation && (
-                        <div className="absolute top-4 left-4 bg-white p-2 rounded-lg text-xs">
-                            위치: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
+                        <div className="absolute top-4 left-4 bg-white bg-opacity-90 p-2 rounded-lg text-xs">
+                            📍 위치: {currentLocation.lat.toFixed(6)}, {currentLocation.lng.toFixed(6)}
                         </div>
                     )}
                 </div>
@@ -305,7 +435,7 @@ const RecommendationAccepted = () => {
 
                     <div className="bg-white rounded-xl p-4 mb-6">
                         <div className="text-center text-gray-800 text-lg">
-                            {departure || '출발지'} → {destination || '도착지'}
+                            {from} → {to}
                         </div>
                     </div>
 
@@ -353,39 +483,27 @@ const RecommendationAccepted = () => {
                             취소 x
                         </button>
                     </div>
-                    <div className="border-t border-gray-300 pt-4">
-                        <div className="flex justify-center">
-                            <div className="flex gap-12">
-                                <button onClick={() => navigate('/home')} className="text-black text-2xl font-medium">
-                                    홈
-                                </button>
-                                <button
-                                    onClick={() => navigate('/partner-stores')}
-                                    className="text-black text-2xl font-medium"
-                                >
-                                    결제매장
-                                </button>
-                                <button
-                                    onClick={() => navigate('/my-page')}
-                                    className="text-black text-2xl font-medium"
-                                >
-                                    마이페이지
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
+
+                <BottomTap />
             </div>
         );
     }
 
     // 여행 완료 화면
     if (currentStep === 'completed') {
+        const { from, to } = getDisplayAddresses();
+
         return (
             <div className="mobile-frame">
-                {/* Map Background */}
-                <div className="h-96 bg-gray-200 relative">
-                    <div className="absolute inset-0 bg-gray-300 opacity-50"></div>
+                {/* Kakao Map Background */}
+                <div className="h-96 relative">
+                    <KakaoMap
+                        originLocation={originLocation}
+                        destinationLocation={destinationLocation}
+                        currentLocation={currentLocation}
+                        currentStep={currentStep}
+                    />
                 </div>
 
                 {/* Content */}
@@ -394,7 +512,7 @@ const RecommendationAccepted = () => {
 
                     <div className="bg-white rounded-xl p-4 mb-6">
                         <div className="text-center text-gray-800 text-lg">
-                            {departure || '출발지'} → {destination || '도착지'}
+                            {from} → {to}
                         </div>
                     </div>
 
@@ -437,41 +555,38 @@ const RecommendationAccepted = () => {
                     </div>
                 </div>
 
+                {/* 보상 모달 */}
+                <RewardModal
+                    isVisible={showRewardModal}
+                    onClose={() => setShowRewardModal(false)}
+                    rewardAmount={rewardData?.total_reward || estimatedInfo.reward}
+                    timeSaved={estimatedInfo.timeSaved}
+                    onConfirm={() => {
+                        setShowRewardModal(false);
+                        navigate('/home');
+                    }}
+                />
+
                 {/* Bottom Navigation */}
-                <div className="absolute bottom-20 left-0 right-0">
-                    <div className="border-t border-gray-300 pt-4">
-                        <div className="flex justify-center">
-                            <div className="flex gap-12">
-                                <button onClick={() => navigate('/home')} className="text-black text-2xl font-medium">
-                                    홈
-                                </button>
-                                <button
-                                    onClick={() => navigate('/partner-stores')}
-                                    className="text-black text-2xl font-medium"
-                                >
-                                    결제매장
-                                </button>
-                                <button
-                                    onClick={() => navigate('/my-page')}
-                                    className="text-black text-2xl font-medium"
-                                >
-                                    마이페이지
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <BottomTap />
             </div>
         );
     }
 
     // 여행 중 화면
     if (currentStep === 'traveling') {
+        const { from, to } = getDisplayAddresses();
+
         return (
             <div className="mobile-frame">
-                {/* Map Background */}
-                <div className="h-96 bg-gray-200 relative">
-                    <div className="absolute inset-0 bg-gray-300 opacity-50"></div>
+                {/* Kakao Map Background */}
+                <div className="h-96 relative">
+                    <KakaoMap
+                        originLocation={originLocation}
+                        destinationLocation={destinationLocation}
+                        currentLocation={currentLocation}
+                        currentStep={currentStep}
+                    />
                 </div>
 
                 {/* Content */}
@@ -480,7 +595,7 @@ const RecommendationAccepted = () => {
 
                     <div className="bg-gray-200 rounded-xl p-4 mb-6">
                         <div className="text-center text-gray-800 text-lg">
-                            {departure || '출발지'} → {destination || '도착지'}
+                            {from} → {to}
                         </div>
                     </div>
 
@@ -547,33 +662,16 @@ const RecommendationAccepted = () => {
                             취소 x
                         </button>
                     </div>
-                    <div className="border-t border-gray-300 pt-4">
-                        <div className="flex justify-center">
-                            <div className="flex gap-12">
-                                <button onClick={() => navigate('/home')} className="text-black text-2xl font-medium">
-                                    홈
-                                </button>
-                                <button
-                                    onClick={() => navigate('/partner-stores')}
-                                    className="text-black text-2xl font-medium"
-                                >
-                                    결제매장
-                                </button>
-                                <button
-                                    onClick={() => navigate('/my-page')}
-                                    className="text-black text-2xl font-medium"
-                                >
-                                    마이페이지
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
+
+                <BottomTap />
             </div>
         );
     }
 
     // 대기 화면 (출발 전)
+    const { from, to } = getDisplayAddresses();
+
     return (
         <div className="mobile-frame">
             {/* Header Background */}
@@ -597,7 +695,7 @@ const RecommendationAccepted = () => {
             <div className="px-8 -mt-16">
                 <div className="bg-white rounded-xl p-4 mb-6">
                     <div className="text-center text-gray-800 text-lg">
-                        {departure || '출발지'} → {destination || '도착지'}
+                        {from} → {to}
                     </div>
                 </div>
 
@@ -693,27 +791,13 @@ const RecommendationAccepted = () => {
                         취소 x
                     </button>
                 </div>
-                <div className="border-t border-gray-300 pt-4">
-                    <div className="flex justify-center">
-                        <div className="flex gap-12">
-                            <button onClick={() => navigate('/home')} className="text-black text-2xl font-medium">
-                                홈
-                            </button>
-                            <button
-                                onClick={() => navigate('/partner-stores')}
-                                className="text-black text-2xl font-medium"
-                            >
-                                결제매장
-                            </button>
-                            <button onClick={() => navigate('/my-page')} className="text-black text-2xl font-medium">
-                                마이페이지
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
+
+            <BottomTap />
         </div>
     );
 };
+
+console.log('✅ RecommendationAccepted 컴포넌트 정의 완료');
 
 export default RecommendationAccepted;
