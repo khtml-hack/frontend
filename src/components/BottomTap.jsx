@@ -14,7 +14,7 @@ export default function BottomTap() {
                         <NavLink
                             to="/stores"
                             className={({ isActive }) =>
-                                `font-medium leading-[26px] ${isActive ? 'font-bold' : 'text-black'}`
+                                `text-black leading-[26px] ${isActive ? 'font-bold' : 'font-medium'}`
                             }
                         >
                             결제매장
@@ -24,7 +24,7 @@ export default function BottomTap() {
                         <NavLink
                             to="/home"
                             className={({ isActive }) =>
-                                `font-medium leading-[26px] ${isActive ? 'font-bold' : 'text-black'}`
+                                `text-black leading-[26px] ${isActive ? 'font-bold' : 'font-medium'}`
                             }
                         >
                             홈
@@ -34,7 +34,7 @@ export default function BottomTap() {
                         <NavLink
                             to="/mypage"
                             className={({ isActive }) =>
-                                `font-medium leading-[26px] ${isActive ? 'font-bold' : 'text-black'}`
+                                `text-black leading-[26px] ${isActive ? 'font-bold' : 'font-medium'}`
                             }
                         >
                             마이페이지
