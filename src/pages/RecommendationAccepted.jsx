@@ -53,110 +53,70 @@ const RecommendationAccepted = () => {
 
     // 실제 표시할 주소 계산
     const getDisplayAddresses = () => {
+        // 백엔드 API 응답 우선, 그 다음 전달받은 값, 마지막으로 기본값
         const from = originalApiData?.origin_address || departure || '동대문구청';
         const to = originalApiData?.destination_address || destination || '한국외국어대학교 서울캠퍼스';
-        return { from, to };
-    };
 
-    // 주소별 fallback 좌표 매핑
-    const getLocationFallback = (address) => {
-        const addressLower = address.toLowerCase();
-        
-        // 한국외국어대학교
-        if (addressLower.includes('한국외국어대학교') || addressLower.includes('서울캠퍼스') || addressLower.includes('한국외대')) {
-            return {
-                lat: 37.5959,
-                lng: 127.0587,
-                address: '한국외국어대학교 서울캠퍼스',
-            };
-        }
-        
-        // 동대문구청
-        if (addressLower.includes('동대문구청') || addressLower.includes('동대문')) {
-            return {
-                lat: 37.5745,
-                lng: 127.0399,
-                address: '동대문구청',
-            };
-        }
-        
-        // 강남역
-        if (addressLower.includes('강남역') || addressLower.includes('강남')) {
-            return {
-                lat: 37.4979,
-                lng: 127.0276,
-                address: '강남역',
-            };
-        }
-        
-        // 홍대입구역
-        if (addressLower.includes('홍대') || addressLower.includes('홍익대')) {
-            return {
-                lat: 37.5563,
-                lng: 126.9222,
-                address: '홍대입구역',
-            };
-        }
-        
-        // 명동
-        if (addressLower.includes('명동')) {
-            return {
-                lat: 37.5636,
-                lng: 126.9826,
-                address: '명동',
-            };
-        }
-        
-        // 서울역
-        if (addressLower.includes('서울역')) {
-            return {
-                lat: 37.5547,
-                lng: 126.9706,
-                address: '서울역',
-            };
-        }
-        
-        // 기본값 (서울 중심가)
-        console.warn('알 수 없는 주소, 기본 좌표 사용:', address);
-        return {
-            lat: 37.5665,
-            lng: 126.978,
-            address: address,
-        };
+        console.log('🏷️ 표시할 주소:', { from, to });
+        console.log('🏷️ API 데이터 확인:', originalApiData);
+        console.log('🏷️ originLocation 상태:', originLocation);
+        console.log('🏷️ destinationLocation 상태:', destinationLocation);
+
+        return { from, to };
     };
 
     // 컴포넌트 마운트시 출발지/목적지 좌표 가져오기
     useEffect(() => {
         const initializeLocations = async () => {
             try {
-                // 우선순위: API 응답 주소 > 전달받은 주소 > 기본값
-                const originAddress = originalApiData?.origin_address || departure || '동대문구청';
-                const destAddress =
-                    originalApiData?.destination_address || destination || '한국외국어대학교 서울캠퍼스';
+                // 우선순위: API 응답 주소 > 전달받은 주소 > null (기본값 없음)
+                const originAddress = originalApiData?.origin_address || departure;
+                const destAddress = originalApiData?.destination_address || destination;
 
                 console.log('🔍 사용할 주소들:', { originAddress, destAddress });
                 console.log('🔍 API 데이터:', originalApiData);
                 console.log('🔍 전달받은 주소:', { departure, destination });
+                console.log('🔍 Location state 전체:', location.state);
 
-                // 출발지와 목적지의 좌표를 가져옴
-                const [originCoords, destCoords] = await Promise.all([
-                    geocodeAddress(originAddress).catch(() => {
-                        console.log('📍 출발지 geocoding 실패, fallback 사용:', originAddress);
-                        // 다양한 주소에 대한 fallback 좌표
-                        return getLocationFallback(originAddress);
-                    }),
-                    geocodeAddress(destAddress).catch(() => {
-                        console.log('📍 목적지 geocoding 실패, fallback 사용:', destAddress);
-                        // 다양한 주소에 대한 fallback 좌표
-                        return getLocationFallback(destAddress);
-                    }),
-                ]);
+                if (!originAddress || !destAddress) {
+                    console.error('❌ 출발지 또는 목적지 주소가 없습니다:', { originAddress, destAddress });
+                    setLocationError('출발지 또는 목적지 정보가 없습니다.');
+                    return;
+                }
+
+                console.log('📍 Geocoding 시작 - 출발지:', originAddress);
+                console.log('📍 Geocoding 시작 - 목적지:', destAddress);
+
+                // 각각 개별적으로 geocoding 시도
+                let originCoords = null;
+                let destCoords = null;
+
+                // 출발지 geocoding
+                try {
+                    originCoords = await geocodeAddress(originAddress);
+                    console.log('✅ 출발지 geocoding 성공:', originCoords);
+                } catch (error) {
+                    console.error('❌ 출발지 geocoding 실패:', error);
+                    setLocationError(`출발지 주소를 찾을 수 없습니다: ${originAddress}`);
+                    return;
+                }
+
+                // 목적지 geocoding
+                try {
+                    destCoords = await geocodeAddress(destAddress);
+                    console.log('✅ 목적지 geocoding 성공:', destCoords);
+                } catch (error) {
+                    console.error('❌ 목적지 geocoding 실패:', error);
+                    setLocationError(`목적지 주소를 찾을 수 없습니다: ${destAddress}`);
+                    return;
+                }
 
                 console.log('📍 최종 출발지 좌표:', originCoords);
                 console.log('📍 최종 목적지 좌표:', destCoords);
 
                 setOriginLocation(originCoords);
                 setDestinationLocation(destCoords);
+                setLocationError(null);
 
                 // 상태 업데이트 후 확인
                 setTimeout(() => {
@@ -164,22 +124,10 @@ const RecommendationAccepted = () => {
                     console.log('📍 State 업데이트 후 destinationLocation:', destCoords);
                 }, 100);
 
-                console.log('출발지 좌표:', originCoords);
-                console.log('목적지 좌표:', destCoords);
+                console.log('✅ 위치 초기화 완료!');
             } catch (error) {
-                console.error('주소 좌표 변환 실패:', error);
-                // 완전 실패시에도 주소별 fallback 사용
-                const originAddress = originalApiData?.origin_address || departure || '동대문구청';
-                const destAddress = originalApiData?.destination_address || destination || '한국외국어대학교 서울캠퍼스';
-                
-                const fallbackOrigin = getLocationFallback(originAddress);
-                const fallbackDest = getLocationFallback(destAddress);
-
-                console.log('📍 Complete Fallback 좌표 사용:', { fallbackOrigin, fallbackDest });
-
-                setOriginLocation(fallbackOrigin);
-                setDestinationLocation(fallbackDest);
-                setLocationError('주소 검색에 실패하여 기본 위치를 사용합니다.');
+                console.error('❌ 전체 위치 초기화 실패:', error);
+                setLocationError(`위치 정보를 가져올 수 없습니다: ${error.message}`);
             }
         };
 

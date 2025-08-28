@@ -8,22 +8,27 @@ const KakaoMap = ({ originLocation, destinationLocation, currentLocation, curren
     useEffect(() => {
         // 카카오맵 스크립트 로드
         const loadKakaoMap = () => {
+            const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+            console.log('🔑 카카오맵 API 키 확인:', apiKey ? `${apiKey.substring(0, 10)}...` : '없음');
+
             if (window.kakao && window.kakao.maps) {
+                console.log('✅ 카카오맵 SDK 이미 로드됨');
                 initializeMap();
                 return;
             }
 
+            console.log('📦 카카오맵 SDK 로드 시작');
             const script = document.createElement('script');
-            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${
-                import.meta.env.VITE_KAKAO_MAP_API_KEY
-            }&autoload=false`;
+            script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${apiKey}&libraries=services&autoload=false`;
             script.onload = () => {
+                console.log('✅ 카카오맵 스크립트 로드 완료');
                 window.kakao.maps.load(() => {
+                    console.log('✅ 카카오맵 초기화 완료');
                     initializeMap();
                 });
             };
             script.onerror = () => {
-                console.error('카카오맵 스크립트 로드 실패');
+                console.error('❌ 카카오맵 스크립트 로드 실패');
             };
             document.head.appendChild(script);
         };
@@ -37,8 +42,13 @@ const KakaoMap = ({ originLocation, destinationLocation, currentLocation, curren
             // 위치 정보가 유효한지 체크 (lat, lng가 있는지)
             const isValidLocation = (loc) => loc && typeof loc.lat === 'number' && typeof loc.lng === 'number';
 
+            console.log('🗺️ 지도 초기화 시작 - 위치 정보 검증:');
+            console.log('📍 Origin:', originLocation, '- Valid:', isValidLocation(originLocation));
+            console.log('📍 Destination:', destinationLocation, '- Valid:', isValidLocation(destinationLocation));
+            console.log('📍 Current:', currentLocation, '- Valid:', isValidLocation(currentLocation));
+
             if (!isValidLocation(originLocation) || !isValidLocation(destinationLocation)) {
-                console.warn('유효하지 않은 위치 정보:', {
+                console.warn('⚠️ 유효하지 않은 위치 정보 - 지도 초기화 중단:', {
                     originLocation,
                     destinationLocation,
                     originValid: isValidLocation(originLocation),
