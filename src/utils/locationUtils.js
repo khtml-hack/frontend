@@ -72,40 +72,62 @@ export const stopWatchingLocation = (watchId) => {
     }
 };
 
-// 주소를 좌표로 변환 (카카오맵 API 활용)
+// 주소를 좌표로 변환 (카카오맵 JavaScript SDK 활용)
 export const geocodeAddress = async (address) => {
-    const KAKAO_API_KEY = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+    console.log('🔍 Geocoding 시작:', address);
 
-    try {
-        const response = await fetch(
-            `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`,
-            {
-                headers: {
-                    Authorization: `KakaoAK ${KAKAO_API_KEY}`,
-                },
+    return new Promise((resolve, reject) => {
+        // 카카오맵 SDK가 로드되어 있는지 확인
+        if (!window.kakao || !window.kakao.maps || !window.kakao.maps.services) {
+            console.error('❌ 카카오맵 SDK가 로드되지 않았습니다.');
+            reject(new Error('카카오맵 SDK가 로드되지 않았습니다.'));
+            return;
+        }
+
+        // Geocoder 생성
+        const geocoder = new window.kakao.maps.services.Geocoder();
+
+        console.log('📡 카카오맵 Geocoder로 주소 검색:', address);
+
+        // 주소로 좌표 검색
+        geocoder.addressSearch(address, (result, status) => {
+            console.log('📡 Geocoder 응답 상태:', status);
+            console.log('📡 Geocoder 응답 결과:', result);
+
+            if (status === window.kakao.maps.services.Status.OK) {
+                if (result && result.length > 0) {
+                    const location = result[0];
+                    const coords = {
+                        lat: parseFloat(location.y),
+                        lng: parseFloat(location.x),
+                        address: location.address_name || address,
+                    };
+
+                    console.log('✅ Geocoding 성공:', coords);
+                    resolve(coords);
+                } else {
+                    console.warn('⚠️ 검색 결과가 없습니다:', address);
+                    reject(new Error(`주소를 찾을 수 없습니다: ${address}`));
+                }
+            } else {
+                console.error('❌ Geocoding 실패:', status, address);
+                let errorMessage = '주소 검색 실패';
+
+                switch (status) {
+                    case window.kakao.maps.services.Status.ZERO_RESULT:
+                        errorMessage = '검색 결과가 없습니다';
+                        break;
+                    case window.kakao.maps.services.Status.ERROR:
+                        errorMessage = '검색 중 오류가 발생했습니다';
+                        break;
+                    default:
+                        errorMessage = `알 수 없는 오류: ${status}`;
+                }
+
+                reject(new Error(`${errorMessage}: ${address}`));
             }
-        );
-
-        if (!response.ok) {
-            throw new Error('Geocoding failed');
-        }
-
-        const data = await response.json();
-
-        if (data.documents && data.documents.length > 0) {
-            const location = data.documents[0];
-            return {
-                lat: parseFloat(location.y),
-                lng: parseFloat(location.x),
-                address: location.address_name,
-            };
-        } else {
-            throw new Error('Address not found');
-        }
-    } catch (error) {
-        console.error('Geocoding error:', error);
-        throw error;
-    }
+        });
+    });
 };
 
 // 출발지에서 벗어났는지 확인 (출발 감지)
