@@ -1,6 +1,6 @@
 import React from 'react';
 import BottomTap from '../components/BottomTap';
-import BeforeIcon from '../assets/Before.png';
+import BeforeIcon from '../assets/Previous.png';
 import { useNavigate } from 'react-router-dom';
 
 const PointHistory = () => {
@@ -14,7 +14,7 @@ const PointHistory = () => {
                     <img
                         src={BeforeIcon}
                         alt="before"
-                        className="w-[10px] h-[10px]"
+                        className="w-[12px] h-[15px]"
                         onClick={() => navigate('/mypage')}
                     />
                     <h1 className="text-center text-[23px] font-bold">적립 / 사용 내역</h1>
