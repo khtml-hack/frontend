@@ -8,7 +8,7 @@ const KakaoMap = ({ originLocation, destinationLocation, currentLocation, curren
     useEffect(() => {
         // 카카오맵 스크립트 로드
         const loadKakaoMap = () => {
-            const apiKey = import.meta.env.VITE_KAKAO_MAP_API_KEY;
+            const apiKey = import.meta.env.VITE_KAKAO_JS_KEY || import.meta.env.VITE_KAKAO_MAP_API_KEY;
             console.log('🔑 카카오맵 API 키 확인:', apiKey ? `${apiKey.substring(0, 10)}...` : '없음');
 
             if (window.kakao && window.kakao.maps) {

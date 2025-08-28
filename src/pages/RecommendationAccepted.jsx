@@ -69,14 +69,39 @@ const RecommendationAccepted = () => {
     useEffect(() => {
         const initializeLocations = async () => {
             try {
-                // 우선순위: API 응답 주소 > 전달받은 주소 > null (기본값 없음)
+                console.log('🔍 API 데이터:', originalApiData);
+                console.log('🔍 전달받은 주소:', { departure, destination });
+                console.log('🔍 Location state 전체:', location.state);
+
+                // 🎯 백엔드에서 위도/경도가 제공된 경우 바로 사용
+                if (originalApiData?.origin_lat && originalApiData?.origin_lng && 
+                    originalApiData?.destination_lat && originalApiData?.destination_lng) {
+                    
+                    const originCoords = {
+                        lat: originalApiData.origin_lat,
+                        lng: originalApiData.origin_lng
+                    };
+                    
+                    const destCoords = {
+                        lat: originalApiData.destination_lat,
+                        lng: originalApiData.destination_lng
+                    };
+                    
+                    console.log('🎯 백엔드에서 좌표 제공됨! 바로 사용:', { originCoords, destCoords });
+                    
+                    setOriginLocation(originCoords);
+                    setDestinationLocation(destCoords);
+                    setLocationError(null);
+                    
+                    console.log('✅ 백엔드 좌표로 위치 초기화 완료!');
+                    return;
+                }
+
+                // 🔍 백엔드에서 좌표가 없으면 주소로 geocoding 수행
                 const originAddress = originalApiData?.origin_address || departure;
                 const destAddress = originalApiData?.destination_address || destination;
 
                 console.log('🔍 사용할 주소들:', { originAddress, destAddress });
-                console.log('🔍 API 데이터:', originalApiData);
-                console.log('🔍 전달받은 주소:', { departure, destination });
-                console.log('🔍 Location state 전체:', location.state);
 
                 if (!originAddress || !destAddress) {
                     console.error('❌ 출발지 또는 목적지 주소가 없습니다:', { originAddress, destAddress });
@@ -87,29 +112,80 @@ const RecommendationAccepted = () => {
                 console.log('📍 Geocoding 시작 - 출발지:', originAddress);
                 console.log('📍 Geocoding 시작 - 목적지:', destAddress);
 
-                // 각각 개별적으로 geocoding 시도
+                // 주소 정규화 함수
+                const normalizeAddress = (address) => {
+                    if (!address) return address;
+                    
+                    // 여러 검색 패턴 시도
+                    const patterns = [
+                        address, // 원본 주소
+                        address.replace(/청$/, ''), // "동대문구청" -> "동대문구"
+                        address.replace(/서울캠퍼스$/, ''), // "한국외국어대학교 서울캠퍼스" -> "한국외국어대학교"
+                        address.replace(/대학교.*$/, '대학교'), // "한국외국어대학교 서울캠퍼스" -> "한국외국어대학교"
+                        `서울 ${address}`, // 서울을 앞에 붙이기
+                    ];
+                    
+                    return patterns;
+                };
+
+                // 스마트 geocoding 함수
+                const smartGeocode = async (address, type) => {
+                    const patterns = normalizeAddress(address);
+                    console.log(`🔍 ${type} 주소 패턴들:`, patterns);
+                    
+                    for (let i = 0; i < patterns.length; i++) {
+                        const pattern = patterns[i];
+                        console.log(`🔍 ${type} 시도 ${i + 1}/${patterns.length}: "${pattern}"`);
+                        
+                        try {
+                            const result = await geocodeAddress(pattern);
+                            console.log(`✅ ${type} geocoding 성공 (패턴 ${i + 1}):`, result);
+                            return result;
+                        } catch (error) {
+                            console.warn(`⚠️ ${type} 패턴 ${i + 1} 실패:`, error.message);
+                            // 마지막 패턴이 아니면 계속 시도
+                            if (i < patterns.length - 1) continue;
+                            throw error; // 모든 패턴 실패시 에러 throw
+                        }
+                    }
+                };
+
+                // 각각 개별적으로 스마트 geocoding 시도
                 let originCoords = null;
                 let destCoords = null;
 
                 // 출발지 geocoding
                 try {
-                    originCoords = await geocodeAddress(originAddress);
-                    console.log('✅ 출발지 geocoding 성공:', originCoords);
+                    originCoords = await smartGeocode(originAddress, '출발지');
                 } catch (error) {
-                    console.error('❌ 출발지 geocoding 실패:', error);
+                    console.error('❌ 출발지 geocoding 모든 패턴 실패:', error);
                     setLocationError(`출발지 주소를 찾을 수 없습니다: ${originAddress}`);
                     return;
                 }
 
                 // 목적지 geocoding
                 try {
-                    destCoords = await geocodeAddress(destAddress);
-                    console.log('✅ 목적지 geocoding 성공:', destCoords);
+                    destCoords = await smartGeocode(destAddress, '목적지');
                 } catch (error) {
-                    console.error('❌ 목적지 geocoding 실패:', error);
+                    console.error('❌ 목적지 geocoding 모든 패턴 실패:', error);
                     setLocationError(`목적지 주소를 찾을 수 없습니다: ${destAddress}`);
                     return;
                 }
+
+                console.log('📍 최종 출발지 좌표:', originCoords);
+                console.log('📍 최종 목적지 좌표:', destCoords);
+
+                setOriginLocation(originCoords);
+                setDestinationLocation(destCoords);
+                setLocationError(null);
+
+                // 상태 업데이트 후 확인
+                setTimeout(() => {
+                    console.log('📍 State 업데이트 후 originLocation:', originCoords);
+                    console.log('📍 State 업데이트 후 destinationLocation:', destCoords);
+                }, 100);
+
+                console.log('✅ 위치 초기화 완료!');
 
                 console.log('📍 최종 출발지 좌표:', originCoords);
                 console.log('📍 최종 목적지 좌표:', destCoords);
