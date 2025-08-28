@@ -15,6 +15,7 @@ export const getTripRecommendation = async (
             regionCode,
             arriveBy,
             arriveByType: typeof arriveBy,
+            arriveByLength: arriveBy ? arriveBy.length : 0,
         });
 
         const requestBody = {
