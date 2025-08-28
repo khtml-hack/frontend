@@ -452,7 +452,7 @@ export default function PartnerStores() {
                 <div ref={mapElRef} className="absolute inset-0 z-0" />
 
                 {/* 검색 & QR */}
-                <div className="absolute left-1/2 top-3 w-[90%] -translate-x-1/2 z-10 space-y-2">
+                <div className="absolute left-1/2 top-3 w-[90%] -translate-x-1/2 z-40 space-y-2">
                     <div className="relative">
                         <input
                             ref={inputRef}
