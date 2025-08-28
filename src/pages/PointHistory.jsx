@@ -11,12 +11,7 @@ const PointHistory = () => {
             {/* 헤더: 아이콘(좌) + 중앙 타이틀 + 투명 스페이서(우) */}
             <div className="pt-[40px] mb-6 px-4">
                 <div className="grid grid-cols-[auto_1fr_auto] items-center">
-                    <img
-                        src={BeforeIcon}
-                        alt="before"
-                        className="w-[12px] h-[15px]"
-                        onClick={() => navigate('/mypage')}
-                    />
+                    <img src={BeforeIcon} alt="before" className="w-[12px] h-[15px]" onClick={() => navigate(-1)} />
                     <h1 className="text-center text-[23px] font-bold">적립 / 사용 내역</h1>
                     <span className="w-4 h-4 invisible" aria-hidden="true" />
                 </div>
