@@ -4,9 +4,9 @@ export default function BottomSheet({
     containerRef,
 
     snapPoints = [0.08, 0.5, 0.8],
-    defaultSnap = 1,
+    defaultSnap = 0,
 
-    minVisiblePx = 80,
+    minVisiblePx = 0,
     header,
     className = '',
     children,
