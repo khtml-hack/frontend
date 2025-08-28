@@ -266,12 +266,12 @@ const Onboarding = () => {
     const renderStep1 = () => (
         <div className="flex flex-col items-center justify-center h-full px-8 pt-20">
             <div className="text-6xl mb-8">👋</div>
-            <h1 className="text-2xl font-medium text-center mb-8 text-black leading-tight">
+            <h1 className="text-[22px] font-medium text-center mb-8 text-black leading-tight">
                 반가워요!
                 <br />
                 제가 뭐라고 불러드리면 좋을까요?
             </h1>
-            <div className="w-full mb-4 relative text-[#7D7D7D]">
+            <div className="w-full mt-[35px] mb-4 relative text-[#7D7D7D]">
                 <input
                     type="text"
                     value={nickname}
@@ -281,8 +281,8 @@ const Onboarding = () => {
                 />
                 <button className="absolute right-6 top-1/2 transform -translate-y-1/2 text-gray-400">✕</button>
             </div>
-            <p className="text-gray-500 text-base mb-12 text-center">* 닉네임은 나중에 바꿀 수 있어요</p>
-            <button onClick={handleNextStep} disabled={!nickname} className="btn-peak w-full ">
+            <p className="text-left text-gray-500 mb-12">* 닉네임은 나중에 바꿀 수 있어요</p>
+            <button onClick={handleNextStep} disabled={!nickname} className="btn-peak w-full mt-[260px] ">
                 다음
             </button>
         </div>
@@ -341,7 +341,7 @@ const Onboarding = () => {
                 {/* Next Button */}
                 <button
                     onClick={requestLocationPermission}
-                    className="w-full text-white py-4 rounded-2xl text-xl font-medium"
+                    className="btn-peak w-full mt-[213px] text-xl font-medium"
                     style={{
                         backgroundColor: '#363636',
                     }}
@@ -504,7 +504,7 @@ const Onboarding = () => {
                 <button
                     onClick={handleNextStep}
                     disabled={selectedRoutes.length === 0}
-                    className={`w-full py-4 rounded-2xl text-xl font-medium transition-all duration-200 ${
+                    className={`btn-peak w-full mt-[260px] text-xl font-medium transition-all duration-200 ${
                         selectedRoutes.length > 0
                             ? 'bg-gray-800 text-white'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -652,7 +652,7 @@ const Onboarding = () => {
             </p>
             <button
                 onClick={() => navigate('/login')}
-                className="w-full py-4 rounded-2xl text-xl font-medium"
+                className="btn-peak w-full mt-[380px] text-xl font-medium"
                 style={{ backgroundColor: '#363636', color: '#ffffff' }}
             >
                 Peak-down 시작하기
