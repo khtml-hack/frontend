@@ -2,7 +2,7 @@ import React from 'react';
 import BottomTap from '../components/BottomTap';
 import BeforeIcon from '../assets/Previous.png';
 import { useNavigate } from 'react-router-dom';
-import MoneyIcon from '../assets/money.png';
+import MoneyIcon from '../assets/Money.png';
 const PointHistory = () => {
     const navigate = useNavigate();
     return (

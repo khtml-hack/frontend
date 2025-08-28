@@ -47,6 +47,7 @@ const Home = () => {
         // 저장된 도착 시간 로드
         const savedArrivalTime = localStorage.getItem('arrivalTime');
         if (savedArrivalTime) {
+            console.log('💾 저장된 도착 시간 로드됨:', savedArrivalTime);
             setArrivalTime(savedArrivalTime);
         }
 
@@ -72,6 +73,7 @@ const Home = () => {
     }, []);
 
     const handleTimeSet = (time) => {
+        console.log('🕐 시간 설정됨:', time);
         setArrivalTime(time);
         localStorage.setItem('arrivalTime', time);
     };
@@ -88,6 +90,8 @@ const Home = () => {
     const formatTimeForAPI = (time) => {
         if (!time) return null;
 
+        console.log('🔄 시간 변환 시작:', time);
+
         // arrive_by 필드는 오늘 날짜의 특정 시간을 ISO 8601 형식으로 전송
         const today = new Date();
         const [hour, minute] = time.split(':');
@@ -102,10 +106,19 @@ const Home = () => {
         );
 
         // ISO 8601 형식으로 반환 (예: "2024-12-25T14:30:00.000Z")
-        return arrivalDate.toISOString();
+        const isoString = arrivalDate.toISOString();
+        console.log('📅 ISO 8601 형식으로 변환됨:', isoString);
+        return isoString;
     };
 
     const handleFindOptimalTime = async () => {
+        console.log('🔍 AI 최적시간 찾기 시작:', {
+            departure,
+            destination,
+            arrivalTime,
+            hasArrivalTime: !!arrivalTime,
+        });
+
         if (!departure || !destination) {
             // 입력이 부족할 경우 모달을 표시
             if (!departure) {
@@ -134,6 +147,14 @@ const Home = () => {
 
             // AI 추천 API 호출 (arrive_by 파라미터 포함)
             const arriveByTime = formatTimeForAPI(arrivalTime);
+            console.log('🚀 API 호출 전 최종 데이터:', {
+                departure,
+                destination,
+                arrivalTime,
+                arriveByTime,
+                hasArrivalTime: !!arrivalTime,
+            });
+
             const recommendation = await getTripRecommendation(
                 departure,
                 destination,
