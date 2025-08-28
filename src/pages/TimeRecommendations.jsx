@@ -67,6 +67,22 @@ const TimeRecommendations = () => {
         return { icon: '🔴', text: '매우혼잡' };
     };
 
+    // 최적 시간의 도착 시간 계산
+    const calculateOptimalArrivalTime = (departureTime, durationMin) => {
+        try {
+            const [hours, minutes] = departureTime.split(':').map(Number);
+            const departure = new Date();
+            departure.setHours(hours, minutes, 0, 0);
+
+            const arrival = new Date(departure.getTime() + durationMin * 60 * 1000);
+
+            return arrival.toTimeString().slice(0, 5); // HH:MM 형태로 반환
+        } catch (e) {
+            console.error('도착 시간 계산 오류:', e);
+            return '도착시간';
+        }
+    };
+
     // 시간 차이 계산 함수
     const calculateTimeDifference = (departureTimeStr) => {
         try {
@@ -130,7 +146,13 @@ const TimeRecommendations = () => {
                       title: optimal.title || '최적 시간',
                       departText: optimal.depart_in_text || '30분 뒤 출발',
                       optimalTime: optimal.optimal_departure_time || '16:52',
-                      arrivalTime: optimal.arrival_time || '도착시간',
+                      arrivalTime:
+                          optimal.optimal_departure_time && optimal.expected_duration_min
+                              ? calculateOptimalArrivalTime(
+                                    optimal.optimal_departure_time,
+                                    optimal.expected_duration_min
+                                )
+                              : '도착시간',
                       duration: optimal.expected_duration_min || 26,
                       traffic: optimalTraffic,
                       timeSaved: optimal.time_saved_min || 3,
