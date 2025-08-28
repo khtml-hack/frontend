@@ -71,7 +71,6 @@ function labelContent(name) {
 function getMyLocMarkerImage(kakao, size = 30) {
     const url = '/current.png';
     const imgSize = new kakao.maps.Size(size, size);
-
     const offset = new kakao.maps.Point(size / 2, size / 2);
     return new kakao.maps.MarkerImage(url, imgSize, { offset });
 }
@@ -79,22 +78,7 @@ function getMyLocMarkerImage(kakao, size = 30) {
 // API
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://peakdown.site').replace(/\/$/, '');
 
-// 지도용 마커 데이터 (limit만 사용)
-async function fetchMapMarkers(limit = 500) {
-    try {
-        const params = new URLSearchParams();
-        if (limit) params.append('limit', String(limit));
-        const res = await fetch(`${API_BASE_URL}/api/merchants/map/?${params}`);
-        if (!res.ok) throw new Error('Failed to fetch markers');
-        const data = await res.json();
-        return data.markers || [];
-    } catch (e) {
-        console.error('Error fetching markers:', e);
-        return [];
-    }
-}
-
-// 상점 목록 (검색만 사용)
+// 상점 목록 (검색 자동완성만 사용)
 async function fetchMerchantsList(page = 1, pageSize = 20, search = '') {
     try {
         const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
@@ -107,6 +91,32 @@ async function fetchMerchantsList(page = 1, pageSize = 20, search = '') {
         console.error('Error fetching merchants:', e);
         return { merchants: [], pagination: {} };
     }
+}
+
+// === nearby API ===
+async function fetchNearbyMerchants({ lat, lng, radius_m = 1500, limit = 50, search = '' }) {
+    try {
+        const params = new URLSearchParams({
+            lat: String(lat),
+            lng: String(lng),
+            radius_m: String(radius_m),
+            limit: String(limit),
+        });
+        if (search) params.append('search', search);
+
+        const res = await fetch(`${API_BASE_URL}/api/merchants/nearby/?${params}`);
+        if (!res.ok) throw new Error('Failed to fetch nearby merchants');
+        const data = await res.json();
+        return { merchants: data.merchants || [], search_info: data.search_info || null };
+    } catch (e) {
+        console.error('Error fetching nearby merchants:', e);
+        return { merchants: [], search_info: null };
+    }
+}
+
+function formatDistance(m) {
+    if (m == null) return '';
+    return m < 1000 ? `${Math.round(m)}m` : `${(m / 1000).toFixed(1)}km`;
 }
 
 const toNum = (v) => {
@@ -274,66 +284,87 @@ export default function PartnerStores() {
         };
     }, [containerReady]);
 
-    // 데이터 로드 + 마커 & 라벨 (검색만 의존)
+    // 지도 중심 기준으로 /nearby 호출 + 마커/라벨 동기화
     useEffect(() => {
         if (!mapReady) return;
+        const kakao = window.kakao;
+        const map = mapRef.current;
+        if (!kakao || !map) return;
 
-        const loadMerchants = async () => {
-            setLoading(true);
-            try {
-                // 리스트
-                const listData = await fetchMerchantsList(1, 50, searchQuery);
-                setMerchants(listData.merchants);
+        let canceled = false;
+        let idleTimer = null;
 
-                // 마커
-                const markerData = await fetchMapMarkers(200);
+        const renderMarkers = (list) => {
+            // 초기화
+            markersRef.current.forEach((m) => m.setMap(null));
+            labelsRef.current.forEach((o) => o.setMap(null));
+            markersRef.current = [];
+            labelsRef.current = [];
 
-                // 초기화
-                markersRef.current.forEach((m) => m.setMap(null));
-                labelsRef.current.forEach((o) => o.setMap(null));
-                markersRef.current = [];
-                labelsRef.current = [];
+            ensureStoreLabelStyle();
 
-                const kakao = window.kakao;
-                const map = mapRef.current;
-                if (!kakao || !map) return;
+            list.forEach((store) => {
+                const ll = getLatLng(store);
+                const name = store.name || store.시설명 || '';
+                if (!ll) return;
 
-                ensureStoreLabelStyle();
+                const pos = new kakao.maps.LatLng(ll.lat, ll.lng);
 
-                markerData.forEach((store) => {
-                    const ll = getLatLng(store);
-                    if (!ll) return;
-                    const name = store.시설명 || store.name || '';
+                const marker = new kakao.maps.Marker({ map, position: pos, title: name });
+                markersRef.current.push(marker);
 
-                    const marker = new kakao.maps.Marker({
-                        map,
-                        position: new kakao.maps.LatLng(ll.lat, ll.lng),
-                        title: name,
-                    });
-                    markersRef.current.push(marker);
-
-                    const overlay = new kakao.maps.CustomOverlay({
-                        position: new kakao.maps.LatLng(ll.lat, ll.lng),
-                        content: labelContent(name),
-                        xAnchor: 0.5,
-                        yAnchor: 1.0,
-                        zIndex: 999,
-                    });
-                    overlay.setMap(map);
-                    labelsRef.current.push(overlay);
-
-                    kakao.maps.event.addListener(marker, 'click', () => {
-                        map.panTo(new kakao.maps.LatLng(ll.lat, ll.lng));
-                    });
+                const overlay = new kakao.maps.CustomOverlay({
+                    position: pos,
+                    content: labelContent(name),
+                    xAnchor: 0.5,
+                    yAnchor: 1.0,
+                    zIndex: 999,
                 });
-            } catch (e) {
-                console.error('Error loading merchants:', e);
+                overlay.setMap(map);
+                labelsRef.current.push(overlay);
+
+                kakao.maps.event.addListener(marker, 'click', () => map.panTo(pos));
+            });
+        };
+
+        const loadNearby = async () => {
+            try {
+                setLoading(true);
+                const c = map.getCenter();
+                const { merchants } = await fetchNearbyMerchants({
+                    lat: c.getLat(),
+                    lng: c.getLng(),
+                    radius_m: 1500,
+                    limit: 50,
+                    search: searchQuery, // 서버가 search 지원 안 하면 무시됨
+                });
+                if (canceled) return;
+                setMerchants(merchants);
+                renderMarkers(merchants);
             } finally {
-                setLoading(false);
+                if (!canceled) setLoading(false);
             }
         };
 
-        loadMerchants();
+        const handleIdle = () => {
+            clearTimeout(idleTimer);
+            idleTimer = setTimeout(loadNearby, 250); // 디바운스
+        };
+
+        kakao.maps.event.addListener(map, 'idle', handleIdle);
+        loadNearby(); // 초기 1회
+
+        return () => {
+            canceled = true;
+            clearTimeout(idleTimer);
+            try {
+                kakao.maps.event.removeListener(map, 'idle', handleIdle);
+            } catch {}
+            markersRef.current.forEach((m) => m.setMap(null));
+            labelsRef.current.forEach((o) => o.setMap(null));
+            markersRef.current = [];
+            labelsRef.current = [];
+        };
     }, [mapReady, searchQuery]);
 
     // ====== 자동완성: 인풋 변경을 디바운스해서 후보 조회 ======
@@ -496,15 +527,15 @@ export default function PartnerStores() {
                                 ) : (
                                     <ul className="divide-y divide-zinc-100">
                                         {merchants.map((store, i) => {
-                                            const name = store.시설명 || store.name;
-                                            const cate = store.카테고리 || store.category;
-                                            const addr = store.소재지 || store.address;
-                                            const ll = getLatLng(store);
+                                            const name = store.name || store.시설명;
+                                            const cate = store.category || store.카테고리;
+                                            const addr = store.address || store.소재지;
 
                                             return (
                                                 <li key={store.id || i} className="px-3 py-2">
                                                     <button
                                                         onClick={() => {
+                                                            const ll = getLatLng(store);
                                                             if (ll) flyTo(ll.lat, ll.lng);
                                                         }}
                                                         className="w-full text-left"
@@ -523,6 +554,13 @@ export default function PartnerStores() {
                                                                     {addr}
                                                                 </div>
                                                             </div>
+
+                                                            {/* 거리 뱃지 */}
+                                                            {typeof store.distance_m === 'number' && (
+                                                                <span className="ml-2 shrink-0 text-[11px] rounded-full bg-zinc-100 px-2 py-1 text-zinc-700">
+                                                                    {formatDistance(store.distance_m)}
+                                                                </span>
+                                                            )}
                                                         </div>
                                                     </button>
                                                 </li>
