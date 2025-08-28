@@ -508,10 +508,11 @@ export default function PartnerStores() {
 
                 {/* 바텀시트 */}
                 {containerReady && (
-                    <div className="fixed bottom-[56px] mx-auto z-30 w-full max-w-[420px] h-[calc(100dvh-56px)]">
+                    <div className="fixed bottom-[56px] mx-auto z-30 w-full max-w-[420px] h-[calc(100dvh-56px)]pointer-events-none">
                         <BottomSheet
+                            className="pointer-events-auto"
                             containerRef={containerRef}
-                            snapPoints={[0.18, 0.4, 0.55, 1]} // 👈 0.35 추가
+                            snapPoints={[0.18, 0.4, 0.55, 1]}
                             defaultSnap={1} //
                             header={
                                 <div className="flex items-center justify-between px-3 py-2">
