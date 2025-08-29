@@ -465,7 +465,7 @@ const Home = () => {
                     </div>
 
                     {/* Advertisement Image */}
-                    <div className="mb-6">
+                    <div className="mb-8">
                         <img src="/광고.png" alt="광고" className="w-full rounded-lg" />
                     </div>
                 </main>
