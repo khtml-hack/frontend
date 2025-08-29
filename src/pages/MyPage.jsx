@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useKakaoMap, searchPlace, getCurrentLocation } from '../hooks/useKakaoMap';
 import { useNavigate } from 'react-router-dom';
 import { patchNickname } from '../api/nicknameApi';
 import { logoutUser } from '../api/userApi';
@@ -6,20 +7,110 @@ import BottomTap from '../components/BottomTap';
 import MoneyIcon from '../assets/Money.png';
 export default function MyPage() {
     const navigate = useNavigate();
-
     // QR 모달
     const [qrOpen, setQrOpen] = useState(false);
-
     // 닉네임 상태 & 모달 상태
     const [nickname, setNickname] = useState('김원활');
     const [editOpen, setEditOpen] = useState(false);
     const [formName, setFormName] = useState(nickname);
     const [saving, setSaving] = useState(false);
     const [saveErr, setSaveErr] = useState('');
-
     // 로그아웃 관련 상태
     const [error, setError] = useState('');
     const [logoutModalOpen, setLogoutModalOpen] = useState(false);
+    // 집 주소 관리 모달 상태 및 검색 관련
+    const [addressModalOpen, setAddressModalOpen] = useState(false);
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [selectedAddress, setSelectedAddress] = useState(null);
+    const [isSearching, setIsSearching] = useState(false);
+    const [addressSaving, setAddressSaving] = useState(false);
+    const [addressError, setAddressError] = useState('');
+    const kakaoMapLoaded = useKakaoMap();
+
+    // 주소 검색
+    const handlePlaceSearch = () => {
+        if (!searchKeyword.trim()) return;
+        if (!kakaoMapLoaded) {
+            setAddressError('카카오맵을 로딩 중입니다. 잠시 후 다시 시도해주세요.');
+            return;
+        }
+        setIsSearching(true);
+        setSearchResults([]);
+        searchPlace(searchKeyword, (results) => {
+            const converted = results.map((place) => ({
+                id: place.id,
+                name: place.place_name,
+                address: place.address_name || place.road_address_name,
+                roadAddress: place.road_address_name,
+                x: parseFloat(place.x),
+                y: parseFloat(place.y),
+            }));
+            setSearchResults(converted);
+            setIsSearching(false);
+        });
+    };
+
+    // 현재 위치로 주소 찾기
+    const handleCurrentLocation = async () => {
+        try {
+            setIsSearching(true);
+            const loc = await getCurrentLocation();
+            if (kakaoMapLoaded && window.kakao && window.kakao.maps) {
+                const geocoder = new window.kakao.maps.services.Geocoder();
+                geocoder.coord2Address(loc.longitude, loc.latitude, (result, status) => {
+                    setIsSearching(false);
+                    if (status === window.kakao.maps.services.Status.OK) {
+                        const address = result[0].address;
+                        setSelectedAddress({
+                            id: 'current',
+                            name: '현재 위치',
+                            address: address.address_name,
+                            roadAddress: result[0].road_address
+                                ? result[0].road_address.address_name
+                                : address.address_name,
+                            x: loc.longitude,
+                            y: loc.latitude,
+                        });
+                    } else {
+                        setSelectedAddress({
+                            id: 'current',
+                            name: '현재 위치',
+                            address: `위도: ${loc.latitude.toFixed(6)}, 경도: ${loc.longitude.toFixed(6)}`,
+                            x: loc.longitude,
+                            y: loc.latitude,
+                        });
+                    }
+                });
+            }
+        } catch (e) {
+            setIsSearching(false);
+            setAddressError('현재 위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
+        }
+    };
+
+    // 집 주소 저장 함수 (선택된 주소)
+    async function handleSaveAddress() {
+        if (!selectedAddress) return;
+        setAddressSaving(true);
+        setAddressError('');
+        try {
+            const { patchUserAddress } = await import('../api/addressApi');
+            const res = await patchUserAddress(selectedAddress.address);
+            if (res && res.address) {
+                setAddressModalOpen(false);
+                setSelectedAddress(null);
+                setSearchKeyword('');
+                setSearchResults([]);
+            } else {
+                setAddressError(res?.error || '주소 저장에 실패했습니다.');
+            }
+        } catch (err) {
+            setAddressError('네트워크 오류');
+        } finally {
+            setAddressSaving(false);
+        }
+    }
 
     // ESC로 모달 닫기
     useEffect(() => {
@@ -131,6 +222,102 @@ export default function MyPage() {
                                         <span className="text-zinc-400">›</span>
                                     </button>
                                 </li>
+                                <li>
+                                    <button
+                                        className="flex w-full items-center justify-between px-4 py-3"
+                                        onClick={() => setAddressModalOpen(true)}
+                                    >
+                                        <span>집 주소 관리</span>
+                                        <span className="text-zinc-400">›</span>
+                                    </button>
+                                </li>
+                                {/* 집 주소 관리 모달 (카카오맵 검색) */}
+                                {addressModalOpen && (
+                                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                                        <div className="bg-white rounded-xl p-6 w-80 shadow-lg">
+                                            <h3 className="text-center text-lg font-semibold mb-4">집 주소 관리</h3>
+                                            <div className="mb-3">
+                                                <div className="bg-white border rounded-xl p-2 flex items-center gap-2">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="주소로 검색"
+                                                        value={searchKeyword}
+                                                        onChange={(e) => setSearchKeyword(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handlePlaceSearch()}
+                                                        className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base outline-none"
+                                                        disabled={isSearching || addressSaving}
+                                                    />
+                                                    <button
+                                                        onClick={handlePlaceSearch}
+                                                        className="text-gray-700 px-2 py-1 rounded-lg bg-gray-100"
+                                                        disabled={isSearching || addressSaving}
+                                                    >
+                                                        검색
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={handleCurrentLocation}
+                                                    className="w-full mt-2 bg-gray-800 text-white py-2 rounded-xl font-medium"
+                                                    disabled={isSearching || addressSaving}
+                                                >
+                                                    📍 현재 위치로 찾기
+                                                </button>
+                                            </div>
+                                            {isSearching && (
+                                                <div className="text-center text-sm text-gray-500 mb-2">검색 중...</div>
+                                            )}
+                                            {searchResults.length > 0 && (
+                                                <div className="mb-2 max-h-40 overflow-y-auto bg-white border rounded-xl">
+                                                    {searchResults.map((r) => (
+                                                        <div
+                                                            key={r.id}
+                                                            onClick={() => setSelectedAddress(r)}
+                                                            className={`p-2 border-b cursor-pointer ${
+                                                                selectedAddress?.id === r.id ? 'bg-gray-100' : ''
+                                                            }`}
+                                                        >
+                                                            <div className="text-gray-900 font-medium">{r.name}</div>
+                                                            <div className="text-gray-500 text-sm">{r.address}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {selectedAddress && (
+                                                <div className="mb-2 p-2 bg-gray-50 border rounded-xl">
+                                                    <div className="text-gray-900 font-medium mb-1">선택된 주소</div>
+                                                    <div className="text-gray-700 text-sm">
+                                                        {selectedAddress.address}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {addressError && (
+                                                <div className="text-red-500 text-sm mb-2">{addressError}</div>
+                                            )}
+                                            <div className="flex gap-2 mt-2">
+                                                <button
+                                                    className="flex-1 py-2 rounded bg-zinc-200 text-zinc-700"
+                                                    onClick={() => {
+                                                        setAddressModalOpen(false);
+                                                        setSelectedAddress(null);
+                                                        setSearchKeyword('');
+                                                        setSearchResults([]);
+                                                        setAddressError('');
+                                                    }}
+                                                    disabled={addressSaving}
+                                                >
+                                                    취소
+                                                </button>
+                                                <button
+                                                    className="flex-1 py-2 rounded bg-green-500 text-white"
+                                                    onClick={handleSaveAddress}
+                                                    disabled={addressSaving || !selectedAddress}
+                                                >
+                                                    저장
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 <li>
                                     <button
                                         className="flex w-full items-center justify-between px-4 py-3"
