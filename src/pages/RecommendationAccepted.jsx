@@ -12,6 +12,7 @@ import {
 import KakaoMap from '../components/map/KakaoMap';
 import RewardModal from '../components/reward/RewardModal';
 import BottomTap from '../components/BottomTap';
+import Phrase from '../assets/Phrase.png';
 
 const RecommendationAccepted = () => {
     console.log('🚀 RecommendationAccepted 컴포넌트 렌더링 시작');
@@ -739,7 +740,7 @@ const RecommendationAccepted = () => {
     const { from, to } = getDisplayAddresses();
 
     return (
-        <div className="mobile-frame">
+        <div className="mobile-frame relative">
             {/* Header Background */}
             <div className="bg-gray-100 h-72 relative">
                 <div className="px-8 pt-8">
@@ -858,7 +859,9 @@ const RecommendationAccepted = () => {
                     </button>
                 </div>
             </div>
-
+            <div className="absolute bottom-[80px] left-0 right-0 flex justify-center">
+                <img src={Phrase} alt="슬로건 이미지" className="w-auto" />
+            </div>
             <BottomTap />
         </div>
     );
