@@ -135,18 +135,23 @@ const OnboardingAddress = () => {
                     <p className="text-sm text-gray-600 mb-6">회원가입을 완료하려면 집 주소를 등록해주세요.</p>
 
                     <div className="mb-4">
-                        <div className="bg-white border rounded-2xl p-4 flex items-center gap-3" style={{ borderColor: '#c8c8c8' }}>
+                        <div className="bg-white border rounded-2xl pl-4 pr-2 py-2 flex items-center gap-2" style={{ borderColor: '#c8c8c8' }}>
                             <input
                                 type="text"
                                 placeholder="주소로 검색"
                                 value={searchKeyword}
                                 onChange={(e) => setSearchKeyword(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handlePlaceSearch()}
-                                className="w-full bg-transparent text-gray-900 placeholder-gray-400 text-base outline-none"
+                                className="flex-1 bg-transparent text-gray-900 placeholder-gray-400 text-base outline-none"
                             />
-                            <button onClick={handlePlaceSearch} className="text-gray-700 px-3 py-1 rounded-lg bg-gray-100">검색</button>
+                            <button
+                                onClick={handlePlaceSearch}
+                                className="whitespace-nowrap w-16 h-10 flex items-center justify-center rounded-xl bg-gray-900 text-white text-sm hover:bg-gray-800"
+                            >
+                                검색
+                            </button>
                         </div>
-                        <button onClick={handleCurrentLocation} className="w-full mt-3 bg-gray-800 text-white py-3 rounded-xl font-medium">
+                        <button onClick={handleCurrentLocation} className="w-full mt-3 bg-white text-gray-800 border border-gray-300 py-3 rounded-xl font-medium hover:bg-gray-50">
                             📍 현재 위치로 찾기
                         </button>
                     </div>
@@ -154,9 +159,13 @@ const OnboardingAddress = () => {
                     {isSearching && <div className="text-center text-sm text-gray-500 mb-4">검색 중...</div>}
 
                     {searchResults.length > 0 && (
-                        <div className="mb-4 max-h-60 overflow-y-auto bg-white border rounded-xl" style={{ borderColor: '#e5e7eb' }}>
+                        <div className="mb-4 max-h-60 overflow-y-auto bg-white border rounded-xl divide-y" style={{ borderColor: '#e5e7eb' }}>
                             {searchResults.map((r) => (
-                                <div key={r.id} onClick={() => setSelectedAddress(r)} className={`p-3 border-b cursor-pointer ${selectedAddress?.id === r.id ? 'bg-gray-100' : ''}`} style={{ borderColor: '#f1f5f9' }}>
+                                <div
+                                    key={r.id}
+                                    onClick={() => setSelectedAddress(r)}
+                                    className={`p-3 cursor-pointer hover:bg-gray-50 ${selectedAddress?.id === r.id ? 'bg-gray-100' : ''}`}
+                                >
                                     <div className="text-gray-900 font-medium">{r.name}</div>
                                     <div className="text-gray-500 text-sm">{r.address}</div>
                                 </div>
