@@ -23,64 +23,18 @@ const Signup = () => {
         }
 
         try {
-            const res = await registerUser({
-                email,
-                username: username || email.split('@')[0],
-                password,
-                password_confirm: confirmPassword,
-            });
-
-            console.log('Signup response:', res); // 디버깅용
-            console.log('Response status:', res.status);
-            console.log('Response success:', res.success);
-            console.log('Response user:', res.user);
-            console.log('Response errors:', res.errors);
-            console.log('Response error:', res.error);
-
-            if (res.success && res.user) {
-                // 성공 시 토큰 저장
-                if (res.access) {
-                    localStorage.setItem('accessToken', res.access);
-                    localStorage.setItem('refreshToken', res.refresh);
-                }
-                // 성공 시 온보딩 페이지로 이동
-                navigate('/onboarding');
-            } else if (res.errors) {
-                // 명세서 형식의 오류 처리
-                const serverErrors = res.errors;
-
-                // 필드별 오류 처리
-                const fieldErrors = {};
-                let hasGeneralError = false;
-
-                // 각 필드별 오류 메시지 추출
-                Object.keys(serverErrors).forEach((field) => {
-                    if (field === 'non_field_errors') {
-                        // 일반 오류 (비밀번호 불일치 등)
-                        setGeneralError(
-                            Array.isArray(serverErrors[field]) ? serverErrors[field].join(' ') : serverErrors[field]
-                        );
-                        hasGeneralError = true;
-                    } else {
-                        // 필드별 오류
-                        fieldErrors[field] = Array.isArray(serverErrors[field])
-                            ? serverErrors[field].join(' ')
-                            : serverErrors[field];
-                    }
-                });
-
-                setErrors(fieldErrors);
-
-                // 일반 오류가 없고 필드 오류도 없으면 기본 메시지 표시
-                if (!hasGeneralError && Object.keys(fieldErrors).length === 0) {
-                    setGeneralError('회원가입에 실패했습니다.');
-                }
-            } else if (res.error) {
-                // 네트워크 오류 등
-                setGeneralError(res.error);
-            } else {
-                setGeneralError('회원가입에 실패했습니다.');
-            }
+            // 주소 입력 단계에서 마저 회원가입을 완료하기 위해 임시 데이터 저장 후 이동
+            localStorage.setItem(
+                'pendingSignup',
+                JSON.stringify({
+                    email,
+                    username: username || email.split('@')[0],
+                    password,
+                    password_confirm: confirmPassword,
+                })
+            );
+            navigate('/onboarding/address');
+            return;
         } catch (e) {
             console.error('Signup error:', e); // 디버깅용
             setGeneralError('회원가입 중 오류가 발생했습니다.');
