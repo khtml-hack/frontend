@@ -526,26 +526,16 @@ const RecommendationAccepted = () => {
                         </p>
                     </div>
 
-                    <div className="text-center">
-                        <button
-                            onClick={() => {
-                                stopLocationMonitoring();
-                                setCurrentStep('waiting');
-                            }}
-                            className="bg-gray-500 text-white px-6 py-3 rounded-lg font-medium"
-                        >
-                            위치 감시 중지
-                        </button>
-                    </div>
+                    {/* 위치 감시 중지 버튼 제거됨 */}
                 </div>
 
                 {/* Bottom Navigation */}
-                <div className="absolute bottom-20 left-0 right-0">
-                    <div className="flex justify-between px-8 mb-4">
-                        <button onClick={() => navigate('/time-recommendations')} className="text-black">
+                <div className="absolute bottom-20 left-0 right-0 up-2">
+                    <div className="flex justify-between px-8 mb-4 mt-6">
+                        <button onClick={() => navigate('/time-recommendations')} className="text-black mt-6">
                             &lt; 다시 추천받기
                         </button>
-                        <button onClick={() => navigate('/home')} className="text-black">
+                        <button onClick={() => navigate('/home')} className="text-black mt-6">
                             취소 x
                         </button>
                     </div>
@@ -739,28 +729,26 @@ const RecommendationAccepted = () => {
     const { from, to } = getDisplayAddresses();
 
     return (
-        <div className="mobile-frame">
-            {/* Header Background */}
-            <div className="bg-gray-100 h-72 relative">
-                <div className="px-8 pt-8">
-                    <button onClick={() => navigate(-1)} className="text-gray-700 text-xl mb-4">
-                        &lt;
-                    </button>
-                    <h1 className="text-4xl font-extrabold peak-green tracking-tight">Peak _down</h1>
-                    <div className="mt-4">
-                        <p className="text-black text-2xl font-semibold leading-tight">
-                            {canDepart
-                                ? `지금 출발하면 ${estimatedInfo.timeSaved}분을 아낄 수 있어요!`
-                                : '탁월한 선택이에요! 가장 여유로운 길이 열릴 때까지 잠시만 기다려주세요.'}
-                        </p>
-                    </div>
+        <div className="mobile-frame bg-gray-100">
+            {/* Header Background (no status bar) */}
+            <div className="h-56 relative flex flex-col justify-end pb-4 px-8">
+                <button onClick={() => navigate(-1)} className="text-gray-700 text-xl mb-4">
+                    &lt;
+                </button>
+                <h1 className="text-4xl font-extrabold peak-green tracking-tight">Peak _down</h1>
+                <div className="mt-4">
+                    <p className="text-black text-2xl font-semibold leading-tight">
+                        {canDepart
+                            ? `지금 출발하면 ${estimatedInfo.timeSaved}분을 아낄 수 있어요!`
+                            : '탁월한 선택이에요! 가장 여유로운 길이 열릴 때까지 잠시만 기다려주세요.'}
+                    </p>
                 </div>
             </div>
 
             {/* Content */}
-            <div className="px-8 -mt-16">
-                <div className="bg-white rounded-xl p-4 mb-6">
-                    <div className="text-center text-gray-800 text-lg">
+            <div className="px-8 -mt-12">
+                <div className="bg-white rounded-xl p-4 mb-4 mt-8">
+                    <div className="text-center text-gray-800 text-lg mt-6">
                         {from} → {to}
                     </div>
                 </div>
@@ -847,8 +835,8 @@ const RecommendationAccepted = () => {
                 )}
             </div>
 
-            {/* Bottom Navigation */}
-            <div className="absolute bottom-20 left-0 right-0">
+            {/* Bottom Navigation (no home indicator) */}
+            <div className="absolute bottom-8 left-0 right-0">
                 <div className="flex justify-between px-8 mb-4">
                     <button onClick={() => navigate('/time-recommendations')} className="text-black">
                         &lt; 다시 추천받기

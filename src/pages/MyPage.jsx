@@ -258,10 +258,8 @@ export default function MyPage() {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <h3 className="text-center text-lg font-semibold mb-4">로그아웃</h3>
-                            <p className="text-center text-neutral-300 mb-6">
-                                로그아웃 하시겠어요?
-                            </p>
-                            
+                            <p className="text-center text-neutral-300 mb-6">로그아웃 하시겠어요?</p>
+
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setLogoutModalOpen(false)}
