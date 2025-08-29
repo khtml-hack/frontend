@@ -145,12 +145,21 @@ const Home = () => {
             localStorage.setItem('departure', departure);
             localStorage.setItem('destination', destination);
 
-            // AI 추천 API 호출 (arrive_by 파라미터 포함)
-            const arriveByTime = formatTimeForAPI(arrivalTime);
+            // arrivalTime이 없으면 기본값(현재 시간 + 1시간) 사용
+            let finalArrivalTime = arrivalTime;
+            if (!finalArrivalTime) {
+                const now = new Date();
+                now.setHours(now.getHours() + 1);
+                const hour = String(now.getHours()).padStart(2, '0');
+                const minute = String(now.getMinutes()).padStart(2, '0');
+                finalArrivalTime = `${hour}:${minute}`;
+            }
+            const arriveByTime = formatTimeForAPI(finalArrivalTime);
             console.log('🚀 API 호출 전 최종 데이터:', {
                 departure,
                 destination,
                 arrivalTime,
+                finalArrivalTime,
                 arriveByTime,
                 hasArrivalTime: !!arrivalTime,
             });

@@ -6,6 +6,7 @@ import Onboarding from './pages/Onboarding';
 import Signup from './pages/Signup';
 import NicknameSetup from './pages/NicknameSetup';
 import Login from './pages/Login';
+import OnboardingAddress from './pages/OnboardingAddress';
 import FavoriteLocations from './pages/FavoriteLocations';
 import TimeRecommendations from './pages/TimeRecommendations';
 import RecommendationAccepted from './pages/RecommendationAccepted';
@@ -15,7 +16,7 @@ import StoreDetail from './pages/StoreDetail';
 import QRUse from './pages/QRUse';
 import PointHistory from './pages/PointHistory';
 import MyPage from './pages/MyPage';
-
+import Ranking from './pages/Ranking';
 function App() {
     return (
         <div className="min-h-screen bg-gray-50">
@@ -24,6 +25,7 @@ function App() {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/nickname-setup" element={<NicknameSetup />} />
                 <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/onboarding/address" element={<OnboardingAddress />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/favorite-locations" element={<FavoriteLocations />} />
                 <Route path="/time-recommendations" element={<TimeRecommendations />} />
@@ -35,6 +37,7 @@ function App() {
                 <Route path="/qr-use" element={<QRUse />} />
                 <Route path="/point-history" element={<PointHistory />} />
                 <Route path="/mypage" element={<MyPage />} />
+                <Route path="/ranking" element={<Ranking />} />
             </Routes>
         </div>
     );

@@ -227,49 +227,54 @@ const RecommendationAccepted = () => {
         console.log('⏰ selectedRecommendation.type:', selectedRecommendation?.type);
         console.log('⏰ selectedRecommendation.rawData:', selectedRecommendation?.rawData);
 
+        // timeDiff 문자열을 초로 변환하는 함수 (예: "1시간 2분" -> 3720)
+        const parseTimeDiffToSeconds = (timeDiffStr) => {
+            if (!timeDiffStr) return null;
+            if (timeDiffStr === '지금') return 0;
+            let total = 0;
+            const hourMatch = timeDiffStr.match(/(\d+)시간/);
+            const minMatch = timeDiffStr.match(/(\d+)분/);
+            if (hourMatch) total += parseInt(hourMatch[1], 10) * 3600;
+            if (minMatch) total += parseInt(minMatch[1], 10) * 60;
+            return total > 0 ? total : null;
+        };
+
         if (selectedRecommendation?.type === 'current') {
             setTimeLeft(0); // 현재 출발은 즉시 가능
             console.log('⏰ 현재 출발 선택 - timeLeft = 0');
         } else if (selectedRecommendation?.type === 'optimal') {
-            // optimal 타입인 경우 여러 경로 시도
+            // 1. timeDiff(사람이 읽기 좋은) -> 초로 변환해서 우선 적용
+            const timeDiffStr = selectedRecommendation?.rawData?.timeDiff;
+            const parsedSeconds = parseTimeDiffToSeconds(timeDiffStr);
+            if (parsedSeconds !== null) {
+                setTimeLeft(parsedSeconds);
+                console.log('⏰ timeDiff에서 파싱된 초:', parsedSeconds);
+                return;
+            }
+            // 기존 방식 fallback
             let departureTimeStr = null;
-
-            // 1. rawData에서 optimal_departure_time 찾기
             if (selectedRecommendation?.rawData?.optimal_departure_time) {
                 departureTimeStr = selectedRecommendation.rawData.optimal_departure_time;
                 console.log('⏰ rawData에서 출발시간 찾음:', departureTimeStr);
-            }
-            // 2. optimalTime 속성에서 찾기 (가공된 데이터)
-            else if (selectedRecommendation?.optimalTime) {
+            } else if (selectedRecommendation?.optimalTime) {
                 departureTimeStr = selectedRecommendation.optimalTime;
                 console.log('⏰ optimalTime에서 출발시간 찾음:', departureTimeStr);
             }
-
             if (departureTimeStr) {
                 const now = new Date();
                 const [hours, minutes] = departureTimeStr.split(':').map(Number);
                 const departureTime = new Date();
                 departureTime.setHours(hours, minutes, 0, 0);
-
-                console.log('⏰ 현재 시간:', now);
-                console.log('⏰ 출발 시간:', departureTime);
-
-                // 출발 시간이 과거라면 다음날로 설정
                 if (departureTime <= now) {
                     departureTime.setDate(departureTime.getDate() + 1);
-                    console.log('⏰ 출발 시간이 과거여서 다음날로 설정:', departureTime);
                 }
-
                 const timeDiff = Math.floor((departureTime - now) / 1000);
-                console.log('⏰ 시간 차이 (초):', timeDiff);
                 setTimeLeft(Math.max(timeDiff, 0));
             } else {
-                console.log('⏰ 출발 시간을 찾을 수 없음');
-                console.log('⏰ selectedRecommendation 전체 구조:', JSON.stringify(selectedRecommendation, null, 2));
+                setTimeLeft(0);
             }
         } else {
-            console.log('⏰ 알 수 없는 타입:', selectedRecommendation?.type);
-            console.log('⏰ selectedRecommendation 전체 구조:', JSON.stringify(selectedRecommendation, null, 2));
+            setTimeLeft(0);
         }
     }, [selectedRecommendation]);
 
@@ -532,7 +537,7 @@ const RecommendationAccepted = () => {
 
                 {/* Bottom Navigation */}
                 <div className="absolute bottom-20 left-0 right-0 up-2">
-                    <div className="flex justify-between px-8 mb-4 mt-6">
+                    <div className="flex justify-between px-8 mb-1 mt-6">
                         <button onClick={() => navigate('/time-recommendations')} className="text-black mt-6">
                             &lt; 다시 추천받기
                         </button>
@@ -567,13 +572,13 @@ const RecommendationAccepted = () => {
                 <div className="px-8 -mt-32 relative z-10">
                     <h1 className="text-4xl font-extrabold peak-green tracking-tight mb-4">Peak _down</h1>
 
-                    <div className="bg-white rounded-xl p-4 mb-6">
+                    <div className="bg-white rounded-xl p-4 mb-4">
                         <div className="text-center text-gray-800 text-lg">
                             {from} → {to}
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-6 text-center mb-6">
+                    <div className="bg-white rounded-xl p-4 text-center mb-6">
                         <h2 className="text-2xl font-medium mb-4">
                             🎉
                             <br />
@@ -757,18 +762,7 @@ const RecommendationAccepted = () => {
                 </div>
 
                 {/* 선택된 추천 정보 표시 */}
-                <div className="bg-white rounded-2xl p-4 mb-6">
-                    <h3 className="text-lg font-semibold mb-2">{selectedRecommendation?.title || '선택된 추천'}</h3>
-                    <p className="text-gray-600 text-sm mb-3">
-                        {selectedRecommendation?.type === 'current'
-                            ? '지금 바로 출발하여 현재 교통상황으로 이동합니다.'
-                            : `${selectedRecommendation?.rawData?.optimalTime}에 출발하여 최적의 교통상황으로 이동합니다.`}
-                    </p>
-                    <div className="text-sm text-gray-500">
-                        예상 소요시간: {estimatedInfo.duration}분 | 혼잡도: {estimatedInfo.congestionIcon}{' '}
-                        {estimatedInfo.congestion} | 리워드: {estimatedInfo.reward}P
-                    </div>
-                </div>
+                {/* '도착제한 최적' 정보 박스 제거됨 */}
 
                 {/* 타이머 (최적 시간인 경우에만) */}
                 {selectedRecommendation?.type !== 'current' && (
@@ -782,31 +776,23 @@ const RecommendationAccepted = () => {
                 )}
 
                 {/* 출발 버튼 */}
-                {canDepart ? (
-                    <button
-                        onClick={handleStartLocationMonitoring}
-                        className="btn-peak w-full mb-4"
-                        disabled={loading || !originLocation || !destinationLocation}
-                    >
-                        {loading
-                            ? '준비 중...'
-                            : !originLocation || !destinationLocation
-                            ? '위치 정보 로딩 중...'
-                            : selectedRecommendation?.type === 'current'
-                            ? '지금 바로 출발하기'
-                            : '최적 시간에 출발하기'}
-                    </button>
-                ) : (
-                    <div className="bg-gray-100 border-2 border-green-500 rounded-2xl p-4 mb-4">
-                        <p className="text-gray-800 text-sm text-center">
-                            예상 도착시간: {estimatedInfo.arrivalTime} (소요시간: {estimatedInfo.duration}분)
-                            <br />
-                            예상 혼잡도: {estimatedInfo.congestionIcon} {estimatedInfo.congestion}
-                            <br />
-                            {estimatedInfo.timeSaved}분 절약 | {estimatedInfo.reward}포인트 획득
-                        </p>
-                    </div>
-                )}
+                <button
+                    onClick={handleStartLocationMonitoring}
+                    className={`btn-peak w-full mb-4 ${
+                        !canDepart || loading || !originLocation || !destinationLocation
+                            ? 'opacity-50 cursor-not-allowed'
+                            : ''
+                    }`}
+                    disabled={!canDepart || loading || !originLocation || !destinationLocation}
+                >
+                    {loading
+                        ? '준비 중...'
+                        : !originLocation || !destinationLocation
+                        ? '위치 정보 로딩 중...'
+                        : selectedRecommendation?.type === 'current'
+                        ? '지금 바로 출발하기'
+                        : '최적 시간에 출발하기'}
+                </button>
 
                 {canDepart && (
                     <div className="mb-6">
@@ -821,21 +807,6 @@ const RecommendationAccepted = () => {
                 )}
 
                 {/* 제휴 상점 추천 (대기 시간이 있을 때) */}
-                {!canDepart && (
-                    <div className="bg-white border-2 border-green-500 rounded-2xl p-4 mb-6">
-                        <p className="text-black text-sm mb-4">
-                            ✨ 도로 위에서 낭비할 뻔한 시간을 아끼셨네요!
-                            <br />
-                            가까운 제휴 상점에 방문해보는 건 어떠세요?
-                        </p>
-                        <button
-                            onClick={() => navigate('/partner-stores')}
-                            className="bg-gray-800 text-white px-6 py-2 rounded-full text-sm"
-                        >
-                            제휴 상점 보기
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Bottom Navigation (no home indicator) */}

@@ -32,6 +32,16 @@ export default function BottomTap() {
                     </li>
                     <li>
                         <NavLink
+                            to="/ranking"
+                            className={({ isActive }) =>
+                                `text-black leading-[26px] ${isActive ? 'font-bold' : 'font-medium'}`
+                            }
+                        >
+                            랭킹
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink
                             to="/mypage"
                             className={({ isActive }) =>
                                 `text-black leading-[26px] ${isActive ? 'font-bold' : 'font-medium'}`
