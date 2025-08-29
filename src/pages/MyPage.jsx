@@ -19,6 +19,7 @@ export default function MyPage() {
 
     // 로그아웃 관련 상태
     const [error, setError] = useState('');
+    const [logoutModalOpen, setLogoutModalOpen] = useState(false);
 
     // ESC로 모달 닫기
     useEffect(() => {
@@ -26,6 +27,7 @@ export default function MyPage() {
             if (e.key === 'Escape') {
                 setQrOpen(false);
                 setEditOpen(false);
+                setLogoutModalOpen(false);
             }
         };
         window.addEventListener('keydown', onKey);
@@ -71,9 +73,15 @@ export default function MyPage() {
         }
     }
 
+    // 로그아웃 모달 열기
+    const handleLogoutClick = () => {
+        setLogoutModalOpen(true);
+    };
+
     // 로그아웃 처리
     const handleLogout = async () => {
         setError('');
+        setLogoutModalOpen(false);
         try {
             const refreshToken = localStorage.getItem('refreshToken');
             if (!refreshToken) {
@@ -135,7 +143,7 @@ export default function MyPage() {
                                 <li>
                                     <button
                                         className="flex w-full items-center justify-between px-4 py-3"
-                                        onClick={handleLogout}
+                                        onClick={handleLogoutClick}
                                     >
                                         <span className="text-red-500">로그아웃</span>
                                         <span className="text-zinc-400">›</span>
@@ -235,6 +243,39 @@ export default function MyPage() {
                             >
                                 {saving ? '저장 중…' : '완료'}
                             </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* 로그아웃 확인 모달 */}
+                {logoutModalOpen && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+                        onClick={() => setLogoutModalOpen(false)}
+                    >
+                        <div
+                            className="relative z-10 w-full max-w-sm rounded-2xl bg-neutral-900 text-white p-6 shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 className="text-center text-lg font-semibold mb-4">로그아웃</h3>
+                            <p className="text-center text-neutral-300 mb-6">
+                                로그아웃 하시겠어요?
+                            </p>
+                            
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setLogoutModalOpen(false)}
+                                    className="flex-1 rounded-full bg-neutral-700 text-white py-3 hover:bg-neutral-600 active:scale-[.98]"
+                                >
+                                    아니오
+                                </button>
+                                <button
+                                    onClick={handleLogout}
+                                    className="flex-1 rounded-full bg-red-500 text-white py-3 hover:bg-red-600 active:scale-[.98]"
+                                >
+                                    네
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
