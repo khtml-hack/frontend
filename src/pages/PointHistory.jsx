@@ -18,11 +18,11 @@ const PointHistory = () => {
             </div>
 
             {/* 초록 카드 */}
-            <div className="bg-green-500 text-white rounded-2xl w-[318px] h-[112px] mx-auto flex items-center justify-between px-6 mb-6 relative overflow-hidden">
+            <div className="bg-[#32B544] text-white rounded-2xl w-[318px] h-[112px] mx-auto flex items-center justify-between px-6 mb-6 relative overflow-hidden">
                 <img src={MoneyIcon} alt="" className="absolute bottom-0 left-0 w-[120px] h-[100px] opacity-80" />
 
                 <div className="flex items-baseline justify-center h-full flex-col gap-2 relative">
-                    <span className="font-semibold">나의 지역화폐 현황</span>
+                    <span className="font-m text-[20px]">나의 지역화폐 현황</span>
                     <span className="text-xl font-extrabold">2,500원</span>
                 </div>
             </div>

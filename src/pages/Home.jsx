@@ -287,10 +287,10 @@ const Home = () => {
                     {/* Time Setting Info */}
                     <div className="mb-4">
                         <p
-                            className="text-[#8f8f8f] text-[14px] font-light leading-[35px] tracking-[-0.56px] cursor-pointer hover:text-[#40d854] transition-colors"
+                            className="text-[#8f8f8f] text-[14px] font-light leading-[35px] tracking-[-0.56px] cursor-pointer hover:text-[#40d854] transition-colors hover:underline"
                             onClick={() => setShowTimeModal(true)}
                         >
-                            이 시간까지는 도착해야해요! 설정 {arrivalTime && `(${formatTimeForDisplay(arrivalTime)})`}
+                            이 시간까지는 도착해야해요! {arrivalTime && `(${formatTimeForDisplay(arrivalTime)})`}
                         </p>
                     </div>
 
@@ -302,7 +302,7 @@ const Home = () => {
                         <div
                             className="w-full bg-white rounded-[10px] relative"
                             style={{
-                                border: '1px solid',
+                                border: '1px solid ',
                                 borderImage: 'linear-gradient(90deg, rgba(87, 72, 255, 0.56) 0%, #40d854 100%) 1',
                                 minHeight: '91px',
                             }}
@@ -426,8 +426,6 @@ const Home = () => {
                                     </svg>
                                     AI 분석 중...
                                 </>
-                            ) : !departure || !destination ? (
-                                `${!departure ? '출발지' : '도착지'} 입력 필요`
                             ) : (
                                 ' AI 최적 시간 찾기'
                             )}
@@ -436,7 +434,7 @@ const Home = () => {
 
                     {/* Regional Currency Info Card */}
                     <div className="mb-6">
-                        <div className="bg-green-500 text-white rounded-2xl px-5 py-4 relative overflow-hidden">
+                        <div className="bg-[#32B544] text-white rounded-2xl px-5 py-4 relative overflow-hidden">
                             <img
                                 src={MoneyIcon}
                                 alt=""
@@ -448,16 +446,16 @@ const Home = () => {
                                     <span className="font-semibold">나의 지역화폐 현황</span>
                                     <span className="text-xl font-extrabold">2,500원</span>
                                 </div>
-                                <div className="mt-3 flex gap-2">
+                                <div className="mt-3 flex w-full justify-end  gap-2">
                                     <button
-                                        className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                        className="rounded-full border-2 border-white/80 bg-white/10 px-3 py-1 text-[15px]"
                                         onClick={() => navigate('/point-history')}
                                     >
                                         적립/사용내역
                                     </button>
                                     <button
                                         onClick={() => navigate('/stores')}
-                                        className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                        className="rounded-full border-2 border-white/80 bg-white/10 px-3 py-1 text-[15px]"
                                     >
                                         사용하러 가기
                                     </button>
