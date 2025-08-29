@@ -153,7 +153,7 @@ export default function MyPage() {
                             <img
                                 src={MoneyIcon}
                                 alt=""
-                                className="absolute bottom-1 left-0 w-[130px] h-[100px] opacity-80"
+                                className="absolute bottom--1 left-0 w-[120px] h-[100px] opacity-80"
                             />
                             <div className="relative">
                                 <div className="flex items-baseline justify-between">

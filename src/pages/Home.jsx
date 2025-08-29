@@ -440,7 +440,7 @@ const Home = () => {
                             <img
                                 src={MoneyIcon}
                                 alt=""
-                                className="absolute bottom-0 left-0 w-[110] h-[60] opacity-80"
+                                className="absolute bottom--1 left-0 w-[110] h-[60] opacity-80"
                             />
 
                             <div className="relative">
