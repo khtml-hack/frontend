@@ -157,27 +157,27 @@ export default function MyPage() {
 
                         {/* 현황 섹션 */}
                         <h3 className="text-sm text-zinc-400">나의 지역화폐 현황 및 사용</h3>
-                        <div className="bg-green-500 text-white rounded-2xl px-5 py-4 relative overflow-hidden">
+                        <div className="bg-[#32B544] text-white rounded-2xl px-5 py-4 relative overflow-hidden">
                             <img
                                 src={MoneyIcon}
                                 alt=""
-                                className="absolute bottom-1 left-0 w-[130px] h-[100px] opacity-80"
+                                className="absolute bottom--1 left-0 w-[120px] h-[100px] opacity-80"
                             />
                             <div className="relative">
                                 <div className="flex items-baseline justify-between">
                                     <span className="font-semibold">나의 지역화폐 현황</span>
                                     <span className="text-xl font-extrabold">2,500원</span>
                                 </div>
-                                <div className="mt-3 flex gap-2">
+                                <div className="mt-3 flex w-full justify-end gap-2">
                                     <button
-                                        className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                        className="rounded-full border-2 border-white/80 bg-white/10  px-3 py-1 text-[15px]"
                                         onClick={() => navigate('/point-history')}
                                     >
                                         적립/사용내역
                                     </button>
                                     <button
                                         onClick={() => navigate('/stores')}
-                                        className="rounded-full border border-white/80 bg-white/10 px-4 py-1.5 text-sm"
+                                        className="rounded-full border-2 border-white/80 bg-white/10  px-3 py-1 text-[15px]"
                                     >
                                         사용하러 가기
                                     </button>

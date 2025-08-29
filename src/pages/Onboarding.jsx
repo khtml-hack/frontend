@@ -638,25 +638,30 @@ const Onboarding = () => {
     );
 
     const renderStep4 = () => (
-        <div className="flex flex-col items-center justify-center h-full px-8 pt-20">
-            <h1 className="text-2xl font-medium text-center mb-8 text-black">모든 준비가 끝났어요!</h1>
-            <p
-                className="text-gray-500 text-base text-center leading-relaxed mb-28"
-                style={{ fontSize: '15px', lineHeight: '24px' }}
-            >
-                {nickname}님을 위한 맞춤 설정이 완료되었습니다.
-                <br />
-                Peak-down과 함께 막히는 길 위,
-                <br />
-                잃었던 시간을 되찾아보세요.
-            </p>
-            <button
-                onClick={() => navigate('/login')}
-                className="btn-peak w-full mt-[380px] text-xl font-medium"
-                style={{ backgroundColor: '#363636', color: '#ffffff' }}
-            >
-                Peak-down 시작하기
-            </button>
+        <div className="flex flex-col items-center justify-between h-full px-8 pt-20">
+            <div className="pt-20 text-center">
+                <h1 className="text-2xl font-medium text-center mb-8 text-black">모든 준비가 끝났어요!</h1>
+                <p
+                    className="text-gray-500 text-base text-center leading-relaxed mb-28"
+                    style={{ fontSize: '15px', lineHeight: '24px' }}
+                >
+                    {nickname}님을 위한 맞춤 설정이 완료되었습니다.
+                    <br />
+                    Peak-down과 함께 막히는 길 위,
+                    <br />
+                    잃었던 시간을 되찾아보세요.
+                </p>
+            </div>
+
+            <div className="mt-[300px] w-full">
+                <button
+                    onClick={() => navigate('/login')}
+                    className="btn-peak w-full text-xl font-medium"
+                    style={{ backgroundColor: '#363636', color: '#ffffff' }}
+                >
+                    Peak-down 시작하기
+                </button>
+            </div>
         </div>
     );
 

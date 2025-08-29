@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../api/userApi';
-
+import Phrase from '../assets/Phrase.png';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -100,14 +100,17 @@ const Login = () => {
 
                     {error && <div className="text-red-500 text-sm text-center mb-4">{error}</div>}
 
-                    <button onClick={() => navigate('/signup')} className="text-center text-gray-500 text-sm">
+                    <button
+                        onClick={() => navigate('/signup')}
+                        className="text-center text-gray-500 text-sm underline "
+                    >
                         계정이 없으신가요?
                     </button>
                 </div>
 
                 {/* Footer */}
-                <div className="pb-8 text-center">
-                    <p className="text-lg font-extrabold peak-green">Peak_down</p>
+                <div className="flex justify-center mt-[200px]">
+                    <img src={Phrase} alt="슬로건 이미지" className="w-auto" />
                 </div>
             </div>
         </div>

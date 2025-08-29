@@ -12,6 +12,7 @@ import {
 import KakaoMap from '../components/map/KakaoMap';
 import RewardModal from '../components/reward/RewardModal';
 import BottomTap from '../components/BottomTap';
+import Phrase from '../assets/Phrase.png';
 
 const RecommendationAccepted = () => {
     console.log('🚀 RecommendationAccepted 컴포넌트 렌더링 시작');
@@ -729,19 +730,21 @@ const RecommendationAccepted = () => {
     const { from, to } = getDisplayAddresses();
 
     return (
-        <div className="mobile-frame bg-gray-100">
-            {/* Header Background (no status bar) */}
-            <div className="h-56 relative flex flex-col justify-end pb-4 px-8">
-                <button onClick={() => navigate(-1)} className="text-gray-700 text-xl mb-4">
-                    &lt;
-                </button>
-                <h1 className="text-4xl font-extrabold peak-green tracking-tight">Peak _down</h1>
-                <div className="mt-4">
-                    <p className="text-black text-2xl font-semibold leading-tight">
-                        {canDepart
-                            ? `지금 출발하면 ${estimatedInfo.timeSaved}분을 아낄 수 있어요!`
-                            : '탁월한 선택이에요! 가장 여유로운 길이 열릴 때까지 잠시만 기다려주세요.'}
-                    </p>
+        <div className="mobile-frame relative">
+            {/* Header Background */}
+            <div className="bg-gray-100 h-72 relative">
+                <div className="px-8 pt-8">
+                    <button onClick={() => navigate(-1)} className="text-gray-700 text-xl mb-4">
+                        &lt;
+                    </button>
+                    <h1 className="text-4xl font-extrabold peak-green tracking-tight">Peak _down</h1>
+                    <div className="mt-4">
+                        <p className="text-black text-2xl font-semibold leading-tight">
+                            {canDepart
+                                ? `지금 출발하면 ${estimatedInfo.timeSaved}분을 아낄 수 있어요!`
+                                : '탁월한 선택이에요! 가장 여유로운 길이 열릴 때까지 잠시만 기다려주세요.'}
+                        </p>
+                    </div>
                 </div>
             </div>
 
@@ -846,7 +849,9 @@ const RecommendationAccepted = () => {
                     </button>
                 </div>
             </div>
-
+            <div className="absolute bottom-[80px] left-0 right-0 flex justify-center">
+                <img src={Phrase} alt="슬로건 이미지" className="w-auto" />
+            </div>
             <BottomTap />
         </div>
     );

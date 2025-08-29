@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { registerUser } from '../api/userApi';
-
+import Phrase from '../assets/Phrase.png';
 const Signup = () => {
     const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
@@ -182,14 +182,13 @@ const Signup = () => {
                         회원가입
                     </button>
 
-                    <button onClick={() => navigate('/login')} className="text-center text-gray-500 text-sm">
+                    <button onClick={() => navigate('/login')} className="text-center text-gray-500 text-sm underline">
                         계정이 있으신가요?
                     </button>
                 </div>
 
-                {/* Footer */}
-                <div className="pb-8 text-center">
-                    <p className="text-lg font-extrabold peak-green">Peak_down</p>
+                <div className="flex justify-center mt-[200px]">
+                    <img src={Phrase} alt="슬로건 이미지" className="w-auto" />
                 </div>
             </div>
         </div>
