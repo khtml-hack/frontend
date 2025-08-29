@@ -40,9 +40,11 @@ const Login = () => {
                 localStorage.setItem('accessToken', res.access);
                 localStorage.setItem('refreshToken', res.refresh);
 
-                // 닉네임이 있으면 저장하고 홈으로 이동
+                // 닉네임 캐시 갱신 (없으면 제거)
                 if (res.nickname) {
                     localStorage.setItem('nickname', res.nickname);
+                } else {
+                    try { localStorage.removeItem('nickname'); } catch {}
                 }
                 navigate('/home');
             } else if (res.error) {
