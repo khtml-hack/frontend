@@ -234,7 +234,7 @@ export default function MyPage() {
                                 {/* 집 주소 관리 모달 (카카오맵 검색) */}
                                 {addressModalOpen && (
                                     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                                        <div className="bg-white rounded-xl p-6 w-80 shadow-lg">
+                                        <div className="bg-white rounded-xl p-6 w-80 h shadow-lg">
                                             <h3 className="text-center text-lg font-semibold mb-4">집 주소 관리</h3>
                                             <div className="mb-3">
                                                 <div className="bg-white border rounded-xl p-2 flex items-center gap-2">
@@ -249,7 +249,7 @@ export default function MyPage() {
                                                     />
                                                     <button
                                                         onClick={handlePlaceSearch}
-                                                        className="text-gray-700 px-2 py-1 rounded-lg bg-gray-100"
+                                                        className="text-gray-700 px-2 py-1 rounded-lg bg-gray-100 w-[90px] h-[30px]"
                                                         disabled={isSearching || addressSaving}
                                                     >
                                                         검색
@@ -257,7 +257,7 @@ export default function MyPage() {
                                                 </div>
                                                 <button
                                                     onClick={handleCurrentLocation}
-                                                    className="w-full mt-2 bg-gray-800 text-white py-2 rounded-xl font-medium"
+                                                    className="w-full mt-3 bg-gray-800 text-white py-2 rounded-xl font-medium"
                                                     disabled={isSearching || addressSaving}
                                                 >
                                                     📍 현재 위치로 찾기
