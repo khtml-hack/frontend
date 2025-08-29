@@ -15,7 +15,7 @@ import StoreDetail from './pages/StoreDetail';
 import QRUse from './pages/QRUse';
 import PointHistory from './pages/PointHistory';
 import MyPage from './pages/MyPage';
-
+import Ranking from './pages/Ranking';
 function App() {
     return (
         <div className="min-h-screen bg-gray-50">
@@ -35,6 +35,7 @@ function App() {
                 <Route path="/qr-use" element={<QRUse />} />
                 <Route path="/point-history" element={<PointHistory />} />
                 <Route path="/mypage" element={<MyPage />} />
+                <Route path="/ranking" element={<Ranking />} />
             </Routes>
         </div>
     );

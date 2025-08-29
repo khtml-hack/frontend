@@ -3,10 +3,11 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 export default function BottomSheet({
     containerRef,
 
-    snapPoints = [0.08, 0.5, 0.8],
+    snapPoints = [0.08, 0.5, 1],
     defaultSnap = 0,
 
     minVisiblePx = 0,
+    topInsetPx = 110,
     header,
     className = '',
     children,
@@ -38,10 +39,15 @@ export default function BottomSheet({
     // snap → translateY(px) 로 변환
     const computeSnapYs = () => {
         const h = getH();
-        return snapPoints.map((sp) => {
-            const vis = toVisiblePx(sp, h);
-            return Math.max(0, h - vis);
+        const ys = snapPoints.map((sp) => {
+            const visiblePx = toVisiblePx(sp, h);
+            const yVal = Math.max(topInsetPx, Math.max(0, h - visiblePx));
+            return yVal;
         });
+        // 최상단 여백을 스냅으로 강제 포함
+        ys.push(Math.max(0, topInsetPx));
+        // 중복 제거 후, 아래(큰 y) → 위(작은 y) 순으로 정렬
+        return Array.from(new Set(ys)).sort((a, b) => b - a);
     };
 
     const clampIndex = (i) => {
@@ -68,8 +74,9 @@ export default function BottomSheet({
 
     const onHeaderClick = () => {
         const idx = nearestIndexByY(y);
-        if (idx > 0) goToIndex(idx - 1);
-        else goToIndex(Math.min(1, snapYsRef.current.length - 1));
+        const last = snapYsRef.current.length - 1; // 0 = 하단, last = 최상단
+        if (idx < last) goToIndex(idx + 1);
+        else goToIndex(Math.max(last - 1, 0));
     };
 
     // 초기 배치
@@ -82,7 +89,7 @@ export default function BottomSheet({
                 return;
             }
             snapYsRef.current = computeSnapYs();
-            const idx = Math.min(defaultSnap, snapYsRef.current.length - 2);
+            const idx = Math.min(defaultSnap, snapYsRef.current.length - 1);
             setY(snapYsRef.current[idx]);
             setReady(true);
             requestAnimationFrame(() => setTransitionOn(true));
@@ -127,7 +134,8 @@ export default function BottomSheet({
 
         const h = getH();
         const maxY = Math.max(0, h - Math.max(0, minVisiblePx)); // ← 하한선을 prop으로
-        const next = Math.min(Math.max(0, baseY.current + dy), maxY);
+        const minY = Math.min(...snapYsRef.current); // 최상단 스냅(여백 포함)
+        const next = Math.min(Math.max(minY, baseY.current + dy), maxY);
         setY(next);
 
         const now = performance.now();
@@ -140,7 +148,9 @@ export default function BottomSheet({
         const FLICK_V = 0.6;
         let idx = nearestIndexByY(y);
         if (Math.abs(vYRef.current) > FLICK_V) {
-            idx = clampIndex(idx + (vYRef.current < 0 ? -1 : 1));
+            // 배열이 아래(큰 y) -> 위(작은 y) 순이므로
+            // 위로 플릭(vY < 0) 시 인덱스를 +1, 아래로 플릭 시 -1
+            idx = clampIndex(idx + (vYRef.current < 0 ? 1 : -1));
         }
         goToIndex(idx);
 
@@ -169,6 +179,7 @@ export default function BottomSheet({
                 onTouchStart={onStart}
                 onClick={onHeaderClick}
                 className="select-none cursor-grab active:cursor-grabbing"
+                style={{ touchAction: 'none' }}
                 role="button"
                 aria-label="시트 드래그/토글"
             >

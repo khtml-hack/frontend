@@ -5,7 +5,7 @@ export const getTripRecommendation = async (
     originAddress,
     destinationAddress,
     regionCode = '110000',
-    arriveBy = null,
+    arriveBy,
     token
 ) => {
     try {
@@ -22,6 +22,7 @@ export const getTripRecommendation = async (
             origin_address: originAddress,
             destination_address: destinationAddress,
             region_code: regionCode,
+            arrive_by: arriveBy,
         };
 
         // arrive_by가 제공된 경우에만 추가
