@@ -7,8 +7,8 @@ export const BOTTOM_TAB_HEIGHT = 83;
 export default function BottomTap() {
     return (
         <nav className="fixed bottom-0 left-0 right-0 border-t border-[#bebebe] bg-white z-50 w-[393px] mx-auto">
-            <div className="h-px bg-[#bebebe]"></div>
-            <div className="bg-white h-[83px] flex items-center justify-center">
+            <div className=" bg-[#bebebe]"></div>
+            <div className="bg-white h-[70px] flex items-center justify-center">
                 <ul className="mx-auto w-full max-w-[420px] flex justify-around items-center py-4 text-[22px]">
                     <li>
                         <NavLink

@@ -271,7 +271,7 @@ const Home = () => {
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 px-7">
+                <main className="flex-1 px-7 pb-8">
                     {/* User Greeting */}
                     <div className="mb-6">
                         <p className="text-[#707070] text-[22px] font-semibold leading-[45px] mb-2">
@@ -465,8 +465,8 @@ const Home = () => {
                     </div>
 
                     {/* Advertisement Image */}
-                    <div className="mb-8">
-                        <img src="/광고.png" alt="광고" className="w-full rounded-lg" />
+                    <div>
+                        <img src="/광고.png" alt="광고" className="w-full mb-[40px]" />
                     </div>
                 </main>
 
