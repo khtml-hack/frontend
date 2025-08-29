@@ -437,7 +437,7 @@ export default function MyPage() {
                 {/* 로그아웃 확인 모달 */}
                 {logoutModalOpen && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+                        className="fixed inset-0 z-1000 flex items-center justify-center bg-black/50 px-4"
                         onClick={() => setLogoutModalOpen(false)}
                     >
                         <div
@@ -467,7 +467,9 @@ export default function MyPage() {
             </div>
 
             {/* 하단 탭 */}
-            <BottomTap />
+            <div className="relative z-20">
+                <BottomTap />
+            </div>
         </div>
     );
 }
