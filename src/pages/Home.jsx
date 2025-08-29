@@ -80,7 +80,11 @@ const Home = () => {
 
     const formatTimeForDisplay = (time) => {
         if (!time) return '';
-        return time; // 'hour:minute' 형식 그대로 반환
+        const [hour, minute] = time.split(':');
+        const hourNum = parseInt(hour);
+        const period = hourNum >= 12 ? '오후' : '오전';
+        const displayHour = hourNum % 12 || 12;
+        return `${period} ${displayHour}:${minute}`;
     };
 
     const formatTimeForAPI = (time) => {
