@@ -73,26 +73,36 @@ const RecommendationAccepted = () => {
                 console.log('🔍 전달받은 주소:', { departure, destination });
                 console.log('🔍 Location state 전체:', location.state);
 
+                // 🆕 새로운 API 응답 구조 확인
+                console.log('🎯 백엔드 좌표 확인:');
+                console.log('  - origin_location:', originalApiData?.origin_location);
+                console.log('  - destination_location:', originalApiData?.destination_location);
+
                 // 🎯 백엔드에서 위도/경도가 제공된 경우 바로 사용
-                if (originalApiData?.origin_lat && originalApiData?.origin_lng && 
-                    originalApiData?.destination_lat && originalApiData?.destination_lng) {
-                    
+                if (
+                    originalApiData?.origin_location?.lat &&
+                    originalApiData?.origin_location?.lng &&
+                    originalApiData?.destination_location?.lat &&
+                    originalApiData?.destination_location?.lng
+                ) {
                     const originCoords = {
-                        lat: originalApiData.origin_lat,
-                        lng: originalApiData.origin_lng
+                        lat: originalApiData.origin_location.lat,
+                        lng: originalApiData.origin_location.lng,
+                        address: originalApiData.origin_address || departure || '출발지',
                     };
-                    
+
                     const destCoords = {
-                        lat: originalApiData.destination_lat,
-                        lng: originalApiData.destination_lng
+                        lat: originalApiData.destination_location.lat,
+                        lng: originalApiData.destination_location.lng,
+                        address: originalApiData.destination_address || destination || '목적지',
                     };
-                    
+
                     console.log('🎯 백엔드에서 좌표 제공됨! 바로 사용:', { originCoords, destCoords });
-                    
+
                     setOriginLocation(originCoords);
                     setDestinationLocation(destCoords);
                     setLocationError(null);
-                    
+
                     console.log('✅ 백엔드 좌표로 위치 초기화 완료!');
                     return;
                 }
@@ -115,7 +125,7 @@ const RecommendationAccepted = () => {
                 // 주소 정규화 함수
                 const normalizeAddress = (address) => {
                     if (!address) return address;
-                    
+
                     // 여러 검색 패턴 시도
                     const patterns = [
                         address, // 원본 주소
@@ -124,7 +134,7 @@ const RecommendationAccepted = () => {
                         address.replace(/대학교.*$/, '대학교'), // "한국외국어대학교 서울캠퍼스" -> "한국외국어대학교"
                         `서울 ${address}`, // 서울을 앞에 붙이기
                     ];
-                    
+
                     return patterns;
                 };
 
@@ -132,11 +142,11 @@ const RecommendationAccepted = () => {
                 const smartGeocode = async (address, type) => {
                     const patterns = normalizeAddress(address);
                     console.log(`🔍 ${type} 주소 패턴들:`, patterns);
-                    
+
                     for (let i = 0; i < patterns.length; i++) {
                         const pattern = patterns[i];
                         console.log(`🔍 ${type} 시도 ${i + 1}/${patterns.length}: "${pattern}"`);
-                        
+
                         try {
                             const result = await geocodeAddress(pattern);
                             console.log(`✅ ${type} geocoding 성공 (패턴 ${i + 1}):`, result);
@@ -212,21 +222,53 @@ const RecommendationAccepted = () => {
 
     // 출발 시간까지 남은 시간 계산
     useEffect(() => {
+        console.log('⏰ 시간 계산 시작:', selectedRecommendation);
+        console.log('⏰ selectedRecommendation.type:', selectedRecommendation?.type);
+        console.log('⏰ selectedRecommendation.rawData:', selectedRecommendation?.rawData);
+
         if (selectedRecommendation?.type === 'current') {
             setTimeLeft(0); // 현재 출발은 즉시 가능
-        } else if (selectedRecommendation?.rawData?.optimal_departure_time) {
-            const now = new Date();
-            const [hours, minutes] = selectedRecommendation.rawData.optimal_departure_time.split(':').map(Number);
-            const departureTime = new Date();
-            departureTime.setHours(hours, minutes, 0, 0);
+            console.log('⏰ 현재 출발 선택 - timeLeft = 0');
+        } else if (selectedRecommendation?.type === 'optimal') {
+            // optimal 타입인 경우 여러 경로 시도
+            let departureTimeStr = null;
 
-            // 출발 시간이 과거라면 다음날로 설정
-            if (departureTime <= now) {
-                departureTime.setDate(departureTime.getDate() + 1);
+            // 1. rawData에서 optimal_departure_time 찾기
+            if (selectedRecommendation?.rawData?.optimal_departure_time) {
+                departureTimeStr = selectedRecommendation.rawData.optimal_departure_time;
+                console.log('⏰ rawData에서 출발시간 찾음:', departureTimeStr);
+            }
+            // 2. optimalTime 속성에서 찾기 (가공된 데이터)
+            else if (selectedRecommendation?.optimalTime) {
+                departureTimeStr = selectedRecommendation.optimalTime;
+                console.log('⏰ optimalTime에서 출발시간 찾음:', departureTimeStr);
             }
 
-            const timeDiff = Math.floor((departureTime - now) / 1000);
-            setTimeLeft(Math.max(timeDiff, 0));
+            if (departureTimeStr) {
+                const now = new Date();
+                const [hours, minutes] = departureTimeStr.split(':').map(Number);
+                const departureTime = new Date();
+                departureTime.setHours(hours, minutes, 0, 0);
+
+                console.log('⏰ 현재 시간:', now);
+                console.log('⏰ 출발 시간:', departureTime);
+
+                // 출발 시간이 과거라면 다음날로 설정
+                if (departureTime <= now) {
+                    departureTime.setDate(departureTime.getDate() + 1);
+                    console.log('⏰ 출발 시간이 과거여서 다음날로 설정:', departureTime);
+                }
+
+                const timeDiff = Math.floor((departureTime - now) / 1000);
+                console.log('⏰ 시간 차이 (초):', timeDiff);
+                setTimeLeft(Math.max(timeDiff, 0));
+            } else {
+                console.log('⏰ 출발 시간을 찾을 수 없음');
+                console.log('⏰ selectedRecommendation 전체 구조:', JSON.stringify(selectedRecommendation, null, 2));
+            }
+        } else {
+            console.log('⏰ 알 수 없는 타입:', selectedRecommendation?.type);
+            console.log('⏰ selectedRecommendation 전체 구조:', JSON.stringify(selectedRecommendation, null, 2));
         }
     }, [selectedRecommendation]);
 
