@@ -183,6 +183,9 @@ export default function MyPage() {
             await logoutUser(refreshToken);
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
+            try {
+                localStorage.removeItem('nickname');
+            } catch {}
             navigate('/login');
         } catch (e) {
             console.error('로그아웃 오류:', e);
