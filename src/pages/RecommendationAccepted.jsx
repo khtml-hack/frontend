@@ -537,7 +537,7 @@ const RecommendationAccepted = () => {
 
                 {/* Bottom Navigation */}
                 <div className="absolute bottom-20 left-0 right-0 up-2">
-                    <div className="flex justify-between px-8 mb-4 mt-6">
+                    <div className="flex justify-between px-8 mb-1 mt-6">
                         <button onClick={() => navigate('/time-recommendations')} className="text-black mt-6">
                             &lt; 다시 추천받기
                         </button>
@@ -572,13 +572,13 @@ const RecommendationAccepted = () => {
                 <div className="px-8 -mt-32 relative z-10">
                     <h1 className="text-4xl font-extrabold peak-green tracking-tight mb-4">Peak _down</h1>
 
-                    <div className="bg-white rounded-xl p-4 mb-6">
+                    <div className="bg-white rounded-xl p-4 mb-4">
                         <div className="text-center text-gray-800 text-lg">
                             {from} → {to}
                         </div>
                     </div>
 
-                    <div className="bg-white rounded-2xl p-6 text-center mb-6">
+                    <div className="bg-white rounded-xl p-4 text-center mb-6">
                         <h2 className="text-2xl font-medium mb-4">
                             🎉
                             <br />
@@ -807,21 +807,6 @@ const RecommendationAccepted = () => {
                 )}
 
                 {/* 제휴 상점 추천 (대기 시간이 있을 때) */}
-                {!canDepart && (
-                    <div className="bg-white border-2 border-green-500 rounded-2xl p-4 mb-6">
-                        <p className="text-black text-sm mb-4">
-                            ✨ 도로 위에서 낭비할 뻔한 시간을 아끼셨네요!
-                            <br />
-                            가까운 제휴 상점에 방문해보는 건 어떠세요?
-                        </p>
-                        <button
-                            onClick={() => navigate('/partner-stores')}
-                            className="bg-gray-800 text-white px-6 py-2 rounded-full text-sm"
-                        >
-                            제휴 상점 보기
-                        </button>
-                    </div>
-                )}
             </div>
 
             {/* Bottom Navigation (no home indicator) */}
